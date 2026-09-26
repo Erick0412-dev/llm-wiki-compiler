@@ -61,6 +61,8 @@ describe("interlink resolution leaves code untouched", () => {
     ["four-space indented code", "    llmwiki status"],
     ["a long fence around a shorter one", "````md\n```sh\nllmwiki status\n```\n````"],
     ["inline code that wraps a line", "Use `prefix\nllmwiki status` here."],
+    ["an HTML pre block", "<pre>\nllmwiki status\n</pre>"],
+    ["an HTML script block", "<script>\nconst llmwiki = 1;\n</script>"],
   ])("leaves %s untouched and still links the prose around it", async (_label, code) => {
     const after = await resolveBody(`See llmwiki.\n\n${code}\n\nThen llmwiki.\n`);
     expect(after).toBe(`See ${LINK}.\n\n${code}\n\nThen ${LINK}.\n`);

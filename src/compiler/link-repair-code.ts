@@ -7,7 +7,9 @@
 import MarkdownIt from "markdown-it";
 
 type Span = { start: number; end: number };
-const markdown = new MarkdownIt();
+// Parsing only (nothing is rendered): `html` makes raw HTML blocks such as
+// <pre> and <script> visible as html_block tokens so their bytes stay literal.
+const markdown = new MarkdownIt({ html: true });
 
 /** Locate literal blocks by their original line ranges. */
 function blockSpans(body: string): Span[] {

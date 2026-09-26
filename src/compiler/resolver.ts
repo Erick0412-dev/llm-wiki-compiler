@@ -118,22 +118,41 @@ function isLinkablePosition(
 }
 
 /**
+ * Literal-region lookup that parses a body only when it has changed. Parsing is
+ * the costly step, and most titles either do not occur in a page or occur only
+ * in protected text, so the same body is otherwise re-parsed once per title.
+ */
+function cachedLiteralRegions(): (text: string) => (offset: number) => boolean {
+  let parsedText: string | null = null;
+  let isLiteral: (offset: number) => boolean = () => false;
+  return (text) => {
+    if (text !== parsedText) {
+      parsedText = text;
+      isLiteral = isLiteralMarkdown(text);
+    }
+    return isLiteral;
+  };
+}
+
+/**
  * Add [[wikilinks]] to a page's body for any title mentions.
  * Skips literal Markdown (fenced, indented and inline code, HTML blocks),
  * already-linked text, citations and non-word-boundary matches.
  */
 function addWikilinks(body: string, titles: PageInfo[], selfTitle: string): string {
   let result = body;
+  const literalRegions = cachedLiteralRegions();
   const selfLower = selfTitle.toLowerCase();
 
   for (const page of titles) {
     if (page.title.toLowerCase() === selfLower) continue;
 
     const matches = findTitleMatches(result, page.title);
+    if (matches.length === 0) continue;
     // Code is copied verbatim by readers, so a title inside it is never linked.
     // Matches are rewritten last-first, so each insertion only shifts text after
     // the positions still to check; regions found once per title stay valid.
-    const isLiteral = isLiteralMarkdown(result);
+    const isLiteral = literalRegions(result);
 
     // Process matches in reverse to preserve positions
     for (const m of matches.reverse()) {
