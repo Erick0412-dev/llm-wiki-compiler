@@ -219,8 +219,8 @@ const PAGE_ATTRIBUTION_LINES: readonly string[] = [
  * Instructs the LLM to write a complete wiki page for a single concept.
  *
  * Ordered from most to least shared: fixed instructions, then the source
- * material (closed by an end marker, so wiki context after it is never read as
- * source), then the per-page parts (existing page, related pages, concept).
+ * material (closed by an end marker that separates it from the wiki context
+ * after it), then the per-page parts (existing page, related pages, concept).
  * Every page drawn from the same sources then starts with an identical prefix,
  * which backends that reuse a common prompt prefix can skip re-reading; for
  * backends that do not, the prompt stays essentially the same size.
