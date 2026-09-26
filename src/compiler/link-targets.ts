@@ -28,9 +28,6 @@ const MAX_TARGET_TITLE_CHARS = 200;
 /** Characters that could open, close or split a wikilink. */
 const LINK_SYNTAX = /[[\]|]/;
 
-/** A slug made only of letters, digits and hyphens, as page slugs are. */
-const PLAIN_SLUG = /^[\p{L}\p{N}-]+$/u;
-
 /** A candidate target before rendering. */
 interface PageRef {
   slug: string;
@@ -49,8 +46,10 @@ function plainLine(text: string): string {
 function renderTarget(ref: PageRef): string | null {
   const title = plainLine(ref.title);
   if (!title || title.length > MAX_TARGET_TITLE_CHARS || LINK_SYNTAX.test(title)) return null;
-  if (!PLAIN_SLUG.test(ref.slug)) return null;
-  return slugify(title) === ref.slug.toLowerCase() ? title : `[[${ref.slug}|${title}]]`;
+  // Links resolve through slugify, so only a canonical slug (unchanged by it)
+  // names the page it points at; an uppercase or odd-hyphen file name would not.
+  if (!ref.slug || slugify(ref.slug) !== ref.slug) return null;
+  return slugify(title) === ref.slug ? title : `[[${ref.slug}|${title}]]`;
 }
 
 /** Rendered targets sorted by title, one per slug (the first seen wins). */
