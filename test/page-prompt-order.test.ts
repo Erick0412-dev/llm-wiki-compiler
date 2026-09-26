@@ -5,8 +5,9 @@
  * Pages drawn from the same sources receive the same instructions and source
  * material, so those must form an identical prefix; the concept, existing page
  * and related pages differ per page and must all come after the source
- * material's end marker, so wiki context is never read as source. The prompt
- * must still name the concept, and keep every per-page part it carried before.
+ * material's end marker, which separates wiki context from source material
+ * (string order cannot prove how a model reads hostile text). The prompt must
+ * still name the concept, and keep every per-page part it carried before.
  */
 
 import { describe, it, expect } from "vitest";

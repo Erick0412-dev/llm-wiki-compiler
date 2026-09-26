@@ -118,6 +118,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Wikilink resolution no longer rewrites code.** The rule-based resolver linked every mention of a page title, including inside code, so commands and paths such as `.llmwiki/state.json` were corrupted into `.[[llmwiki|llmwiki]]/state.json`. It now skips literal Markdown, using the parser-backed check link repair uses plus raw HTML blocks: fenced code (including indented, nested and blockquoted fences), indented code blocks, HTML blocks such as `<pre>` and `<script>`, and inline code spans, including spans that wrap a line. Link repair itself is unchanged. Prose mentions are linked as before. On an 88-page docs wiki, links inside code fell from 168 to 13 (the remainder were written by the model, not the resolver).
+
 - Embedding reconciliation now attempts only work with a persisted retry budget.
   Full retry markers defer new work without discarding prior failed-attempt counts;
   full quarantine markers retain exhausted entries in pending without retrying them.

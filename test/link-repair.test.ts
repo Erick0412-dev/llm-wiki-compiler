@@ -11,6 +11,7 @@ import { writeFile, mkdir, readFile, symlink } from "fs/promises";
 import path from "path";
 import { execFileSync } from "node:child_process";
 import { repairLinks } from "../src/compiler/link-repair.js";
+import { genericBrokenTargets } from "../src/citations/generic-publication.js";
 import { applyCompilePageWritesLocked } from "../src/compiler/compile-write.js";
 import { writeCandidate } from "../src/compiler/candidates.js";
 import { useTempRoot } from "./fixtures/temp-root.js";
@@ -47,6 +48,18 @@ describe("repairLinks", () => {
     expect(await readPage("deployment")).toContain(
       "[[argo-cd-image-update-ownership-model|Argo CD]]",
     );
+  });
+
+  // Publication approval waives a broken link that repair can resolve, and the
+  // viewer reads links in HTML blocks as live; repair must honour that promise.
+  it("repairs a link inside an HTML block that publication approval accepts", async () => {
+    await writePage("argo-cd-guide", "Details.");
+    const body = "<pre>\n[[Argo CD]]\n</pre>";
+    const document = `---\ntitle: Answer\nsummary: s\n---\n\n${body}\n`;
+    expect(await genericBrokenTargets(tmpDir, document)).toEqual([]);
+    await writePage("deployment", body);
+    await repairAndApply();
+    expect(await readPage("deployment")).toContain("[[argo-cd-guide|Argo CD]]");
   });
 
   it("preserves literal replacement sequences in page prose", async () => {
