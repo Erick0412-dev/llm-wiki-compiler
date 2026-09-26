@@ -17,6 +17,7 @@ import { parseFrontmatter } from "../utils/markdown.js";
 import { readWikiPageContentOrWarn } from "./confined-wiki-read.js";
 import { CONCEPTS_DIR, QUERIES_DIR } from "../utils/constants.js";
 import { applyCompilePageWritesLocked } from "./compile-write.js";
+import { isLiteralMarkdown } from "./link-repair-code.js";
 import type { CompilePageNamespace, CompilePageWrite } from "./compile-write.js";
 import * as output from "../utils/output.js";
 
@@ -82,37 +83,6 @@ function isInsideCitation(text: string, position: number): boolean {
   return closeBefore >= position;
 }
 
-/** Fenced code block (``` or ~~~ fence through its closing fence, or to the end). */
-const FENCED_CODE_PATTERN = /^(```|~~~)[^\n]*\n[\s\S]*?(?:^\1[^\n]*$|(?![\s\S]))/gm;
-
-/** Inline code span delimited by one or more backticks on a single line. */
-const INLINE_CODE_PATTERN = /(`+)[^`\n]+?\1/g;
-
-/** A half-open character range [start, end) in a page body. */
-type Span = { start: number; end: number };
-
-/**
- * Character ranges of fenced and inline code in `text`. Code is copied
- * verbatim by readers (commands, paths, config), so a title that appears
- * there must never be rewritten into a wikilink.
- */
-function codeSpans(text: string): Span[] {
-  const spans: Span[] = [];
-  for (const match of text.matchAll(FENCED_CODE_PATTERN)) {
-    spans.push({ start: match.index, end: match.index + match[0].length });
-  }
-  const insideFence = (index: number): boolean => spans.some((s) => index >= s.start && index < s.end);
-  for (const match of text.matchAll(INLINE_CODE_PATTERN)) {
-    if (!insideFence(match.index)) spans.push({ start: match.index, end: match.index + match[0].length });
-  }
-  return spans;
-}
-
-/** Whether `position` falls inside any of the given code spans. */
-function isInsideCode(spans: Span[], position: number): boolean {
-  return spans.some((span) => position >= span.start && position < span.end);
-}
-
 /** Check if a match is at a word boundary. */
 function isWordBoundary(text: string, start: number, end: number): boolean {
   const before = start === 0 || /[\s,.:;!?()\[\]{}/"']/.test(text[start - 1]);
@@ -135,8 +105,13 @@ function findTitleMatches(text: string, title: string): { start: number; end: nu
 }
 
 /** Determine whether a match position is eligible for wikilink insertion. */
-function isLinkablePosition(text: string, start: number, end: number, code: Span[]): boolean {
-  if (isInsideCode(code, start)) return false;
+function isLinkablePosition(
+  text: string,
+  start: number,
+  end: number,
+  isLiteral: (offset: number) => boolean,
+): boolean {
+  if (isLiteral(start)) return false;
   if (isInsideWikilink(text, start)) return false;
   if (isInsideCitation(text, start)) return false;
   return isWordBoundary(text, start, end);
@@ -144,8 +119,8 @@ function isLinkablePosition(text: string, start: number, end: number, code: Span
 
 /**
  * Add [[wikilinks]] to a page's body for any title mentions.
- * Skips code (fenced and inline), already-linked text, citations and
- * non-word-boundary matches.
+ * Skips literal Markdown (fenced, indented and inline code, HTML blocks),
+ * already-linked text, citations and non-word-boundary matches.
  */
 function addWikilinks(body: string, titles: PageInfo[], selfTitle: string): string {
   let result = body;
@@ -155,13 +130,14 @@ function addWikilinks(body: string, titles: PageInfo[], selfTitle: string): stri
     if (page.title.toLowerCase() === selfLower) continue;
 
     const matches = findTitleMatches(result, page.title);
+    // Code is copied verbatim by readers, so a title inside it is never linked.
     // Matches are rewritten last-first, so each insertion only shifts text after
-    // the positions still to check; spans computed once per title stay valid.
-    const code = codeSpans(result);
+    // the positions still to check; regions found once per title stay valid.
+    const isLiteral = isLiteralMarkdown(result);
 
     // Process matches in reverse to preserve positions
     for (const m of matches.reverse()) {
-      if (!isLinkablePosition(result, m.start, m.end, code)) continue;
+      if (!isLinkablePosition(result, m.start, m.end, isLiteral)) continue;
       result = result.slice(0, m.start) + `[[${page.slug}|${page.title}]]` + result.slice(m.end);
     }
   }

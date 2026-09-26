@@ -52,4 +52,17 @@ describe("interlink resolution leaves code untouched", () => {
     const unclosed = await resolveBody("```\nllmwiki status\n");
     expect(unclosed).toBe("```\nllmwiki status\n");
   });
+
+  // Markdown block structure: indented and container fences, indented code,
+  // and a long fence wrapping a shorter example must all stay literal.
+  it.each([
+    ["an indented fence", "  ~~~sh\n  llmwiki status\n  ~~~"],
+    ["a fence inside a blockquote", "> ~~~sh\n> llmwiki status\n> ~~~"],
+    ["four-space indented code", "    llmwiki status"],
+    ["a long fence around a shorter one", "````md\n```sh\nllmwiki status\n```\n````"],
+    ["inline code that wraps a line", "Use `prefix\nllmwiki status` here."],
+  ])("leaves %s untouched and still links the prose around it", async (_label, code) => {
+    const after = await resolveBody(`See llmwiki.\n\n${code}\n\nThen llmwiki.\n`);
+    expect(after).toBe(`See ${LINK}.\n\n${code}\n\nThen ${LINK}.\n`);
+  });
 });
