@@ -128,7 +128,7 @@ function cachedLiteralRegions(): (text: string) => (offset: number) => boolean {
   return (text) => {
     if (text !== parsedText) {
       parsedText = text;
-      isLiteral = isLiteralMarkdown(text);
+      isLiteral = isLiteralMarkdown(text, { htmlBlocks: true });
     }
     return isLiteral;
   };
