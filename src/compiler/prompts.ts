@@ -46,7 +46,7 @@ function sourcesSectionLines(): string[] {
  * downstream auditor can distinguish pages produced under different prompt
  * generations even when the model id is identical. Format is `vMAJOR`.
  */
-export const PROMPT_VERSION = "v4";
+export const PROMPT_VERSION = "v5";
 
 /**
  * The caller's system policy as prompt lines, or nothing when none is set.
@@ -215,6 +215,22 @@ const PAGE_ATTRIBUTION_LINES: readonly string[] = [
 ];
 
 /**
+ * The link-target section: the exact titles a page may use in [[wikilinks]].
+ * Empty when there are none, so a prompt without targets is unchanged. It sits
+ * with the instructions (identical for every page in a compile), after the run
+ * policy and before the untrusted source material.
+ */
+function linkTargetLines(targets: readonly string[]): string[] {
+  if (targets.length === 0) return [];
+  return [
+    "",
+    "Wiki pages you may link to. Use [[wikilinks]] only with these exact titles;",
+    "mention any other concept as plain text:",
+    ...targets.map((title) => `- ${title}`),
+  ];
+}
+
+/**
  * Build the system prompt for wiki page generation.
  * Instructs the LLM to write a complete wiki page for a single concept.
  *
@@ -228,6 +244,7 @@ const PAGE_ATTRIBUTION_LINES: readonly string[] = [
  * @param sourceContent - The source material to draw from.
  * @param existingPage - The current page content if updating (empty for new pages).
  * @param relatedPages - Concatenated content of related wiki pages for context.
+ * @param linkTargets - Titles the page may link to (the same for every page in a compile).
  * @returns System prompt string for the page generation call.
  */
 export function buildPagePrompt(
@@ -235,6 +252,7 @@ export function buildPagePrompt(
   sourceContent: string,
   existingPage: string,
   relatedPages: string,
+  linkTargets: readonly string[] = [],
 ): string {
   const existingSection = existingPage
     ? `\n\nExisting page to update:\n\n${existingPage}`
@@ -255,6 +273,7 @@ export function buildPagePrompt(
     "",
     ...PAGE_ATTRIBUTION_LINES,
     ...systemPolicyLines(),
+    ...linkTargetLines(linkTargets),
     "\n\n--- SOURCE MATERIAL ---\n\n",
     sourceContent,
     "\n\n--- END SOURCE MATERIAL ---",

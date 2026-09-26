@@ -64,6 +64,7 @@ import {
 import { resolveCompileConcurrency } from "./concurrency.js";
 import pLimit from "p-limit";
 import { mergeExtractions } from "./extraction-merge.js";
+import { buildLinkTargets } from "./link-targets.js";
 import { runExtractionPhases } from "./extraction-phase.js";
 import { reusableSourceFiles, withExtractionSnapshot } from "./extraction-snapshot.js";
 import { generateMergedPage } from "./review-pipeline.js";
@@ -171,7 +172,9 @@ async function generatePagesPhase(
   policy: ReviewPolicy,
   concurrency: number,
 ): Promise<PageGenerationResult> {
-  const merged = mergeExtractions(extractions, frozenSlugs, reconciliationSlugs);
+  const concepts = mergeExtractions(extractions, frozenSlugs, reconciliationSlugs);
+  const linkTargets = await buildLinkTargets(root, concepts);
+  const merged = concepts.map((entry) => ({ ...entry, linkTargets }));
   // Build the per-source state snapshot once so each candidate can carry the
   // exact data needed to mark its sources compiled on approval.
   const shouldBuildSourceStates = options.review || !isPolicyOff(policy);
