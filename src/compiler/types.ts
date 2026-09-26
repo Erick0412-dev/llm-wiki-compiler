@@ -27,6 +27,8 @@ export interface MergedConcept {
   combinedContent: string;
   /** Rebuild from live sources without feeding the prior page back to the model. */
   rebuild?: boolean;
+  /** Link targets this page may use; identical for every concept page in one compile. */
+  linkTargets?: readonly string[];
 }
 
 /** Buckets of source changes used by the compile pipeline. */

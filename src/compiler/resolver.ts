@@ -35,7 +35,7 @@ interface PageInfo {
  * `wiki/concepts` is dropped (warned, skipped) and never enters the title index
  * (so its bytes can never be re-emitted into a rewritten page).
  */
-async function buildTitleIndex(root: string): Promise<PageInfo[]> {
+export async function buildTitleIndex(root: string): Promise<PageInfo[]> {
   const conceptsDir = path.join(root, CONCEPTS_DIR);
   if (!existsSync(conceptsDir)) return [];
 

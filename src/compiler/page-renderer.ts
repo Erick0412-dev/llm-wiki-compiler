@@ -34,6 +34,7 @@ interface RenderableConcept {
   sourceFiles: string[];
   combinedContent: string;
   rebuild?: boolean;
+  linkTargets?: readonly string[];
 }
 
 /**
@@ -59,6 +60,7 @@ export async function renderMergedPageContent(
     entry.combinedContent,
     entry.rebuild ? "" : existingPage,
     relatedPages,
+    entry.linkTargets,
   );
 
   const rawPageBody = await callClaude({
