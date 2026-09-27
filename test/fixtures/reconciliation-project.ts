@@ -26,3 +26,20 @@ export function mockReconciliationProvider() {
     complete: vi.spyOn(AnthropicProvider.prototype, "complete"),
   };
 }
+
+/**
+ * A provider whose extraction gives each source the shared concept plus its own
+ * private concept, named after the first of `names` found in the source text.
+ */
+export function mockSharedConceptProvider(names: readonly string[], fallback = "Other") {
+  const provider = mockReconciliationProvider();
+  provider.toolCall.mockImplementation(async (system) => {
+    const source = system.split("--- SOURCE DOCUMENT ---")[1];
+    const name = names.find((candidate) => source.includes(candidate)) ?? fallback;
+    return JSON.stringify({ concepts: ["Shared", name].map((concept) => ({
+      concept, summary: `${name} supports ${concept}`, is_new: true, confidence: 0.8,
+    })) });
+  });
+  provider.complete.mockResolvedValue("Supported content about the shared subject.");
+  return provider;
+}

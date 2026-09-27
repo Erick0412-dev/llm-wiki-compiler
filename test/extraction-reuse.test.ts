@@ -9,7 +9,7 @@ import path from "node:path";
 import { compileAndReport } from "../src/compiler/index.js";
 import { readState, writeState } from "../src/utils/state.js";
 import { parseFrontmatter } from "../src/utils/markdown.js";
-import { mockReconciliationProvider, useReconciliationProject } from "./fixtures/reconciliation-project.js";
+import { mockSharedConceptProvider, useReconciliationProject } from "./fixtures/reconciliation-project.js";
 
 const ctx = useReconciliationProject({
   dirSuffix: "extraction-reuse", sourceFile: "alpha.md",
@@ -19,15 +19,7 @@ const ctx = useReconciliationProject({
 /** Give each source a shared concept and a private concept. */
 async function seed() {
   await writeFile(path.join(ctx.dir, "sources/beta.md"), "# Beta\n\nBeta evidence about the shared subject.");
-  const provider = mockReconciliationProvider();
-  provider.toolCall.mockImplementation(async (system) => {
-    const source = system.split("--- SOURCE DOCUMENT ---")[1];
-    const name = source.includes("Alpha") ? "Alpha" : source.includes("Beta") ? "Beta" : "Gamma";
-    return JSON.stringify({ concepts: ["Shared", name].map((concept) => ({
-      concept, summary: `${name} supports ${concept}`, is_new: true, confidence: 0.8,
-    })) });
-  });
-  provider.complete.mockResolvedValue("Supported content about the shared subject.");
+  const provider = mockSharedConceptProvider(["Alpha", "Beta"], "Gamma");
   await compileAndReport(ctx.dir);
   provider.toolCall.mockClear();
   provider.complete.mockClear();

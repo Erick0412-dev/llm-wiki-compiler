@@ -388,10 +388,15 @@ async function addApprovedSlugToSourceState(
   const existing = currentState.sources[sourceFile];
   const concepts = existing?.concepts ?? [];
   const merged = Array.from(new Set([...concepts, approvedSlug]));
+  // A co-owner approving a page it already owned keeps its extraction snapshot:
+  // same bytes, same concepts, so the next compile can still reuse it. Reuse
+  // re-validates the snapshot, so this only avoids needless re-extraction.
+  const unchanged = existing?.hash === sourceHash && merged.length === concepts.length;
   await updateSourceState(root, sourceFile, {
     hash: sourceHash,
     concepts: merged,
     compiledAt: new Date().toISOString(),
+    ...(unchanged && existing?.extraction ? { extraction: existing.extraction } : {}),
   });
 }
 
