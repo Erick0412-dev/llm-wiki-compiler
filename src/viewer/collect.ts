@@ -85,24 +85,96 @@ export function decorateEntityPages(
  * same logic used for both per-page outgoing links and `/api/index` link
  * resolution; exporting it here keeps callers from re-implementing the
  * order and accidentally diverging.
+ *
+ * Resolution runs once per wikilink occurrence — ~14k times on a 2356-page
+ * wiki — so it reads a slug index built once per page list ({@link slugIndexFor})
+ * instead of scanning the page list four times per link. Within each bucket the
+ * first page in list order wins, preserving the previous `.find()` semantics.
+ *
+ * The index is cached against the `pages` array itself, so a caller must not
+ * add, remove or edit entries (their `pageDirectory`, `slug` or `aliases`)
+ * after the first lookup against that array. To resolve against a changed
+ * list, pass a new array.
  */
 export function resolveBareSlug(
   slug: string,
   pages: ReadonlyArray<PageIndexEntry>,
 ): PageId | null {
   if (slug.length === 0) return null;
-  const concept = pages.find((p) => p.pageDirectory === "concepts" && p.slug === slug);
+  const index = slugIndexFor(pages);
+  const concept = index.conceptBySlug.get(slug);
   if (concept) return defaultPageId("concepts", concept);
-  const query = pages.find((p) => p.pageDirectory === "queries" && p.slug === slug);
+  const query = index.queryBySlug.get(slug);
   if (query) return defaultPageId("queries", query);
   // Alias fallback: a page whose declared aliases slugify to this target. An
   // exact slug match always wins (above) so a real page is never shadowed by
   // another page's alias; concepts still take precedence over queries.
-  const conceptAlias = pages.find((p) => p.pageDirectory === "concepts" && hasAliasSlug(p, slug));
+  const conceptAlias = index.conceptByAlias.get(slug);
   if (conceptAlias) return defaultPageId("concepts", conceptAlias);
-  const queryAlias = pages.find((p) => p.pageDirectory === "queries" && hasAliasSlug(p, slug));
+  const queryAlias = index.queryByAlias.get(slug);
   if (queryAlias) return defaultPageId("queries", queryAlias);
   return null;
+}
+
+/** Four first-wins lookup tables covering the resolution precedence rule. */
+interface PageSlugIndex {
+  conceptBySlug: Map<string, PageIndexEntry>;
+  queryBySlug: Map<string, PageIndexEntry>;
+  conceptByAlias: Map<string, PageIndexEntry>;
+  queryByAlias: Map<string, PageIndexEntry>;
+}
+
+/**
+ * Slug index cache keyed by the page-list identity.
+ *
+ * The wikilink parser resolves against one page list for the whole parse, so
+ * one index per list is enough. Caching on the array itself (WeakMap) means the
+ * index is rebuilt only when a caller passes a different list, and never leaks
+ * once that list is garbage.
+ */
+const slugIndexCache = new WeakMap<ReadonlyArray<PageIndexEntry>, PageSlugIndex>();
+
+/** Insert `entry` under `key` unless a page already claimed it (first wins). */
+function claim(table: Map<string, PageIndexEntry>, key: string, entry: PageIndexEntry): void {
+  if (key.length > 0 && !table.has(key)) table.set(key, entry);
+}
+
+/** Build the four lookup tables in one pass over the page list. */
+function buildSlugIndex(pages: ReadonlyArray<PageIndexEntry>): PageSlugIndex {
+  const index: PageSlugIndex = {
+    conceptBySlug: new Map(),
+    queryBySlug: new Map(),
+    conceptByAlias: new Map(),
+    queryByAlias: new Map(),
+  };
+  for (const page of pages) {
+    const buckets = bucketsFor(index, page.pageDirectory);
+    // Typed entity pages share the snapshot list but are never wikilink targets.
+    if (!buckets) continue;
+    claim(buckets.bySlug, page.slug, page);
+    for (const alias of page.aliases ?? []) claim(buckets.byAlias, slugify(alias), page);
+  }
+  return index;
+}
+
+/** The slug and alias tables for a page directory, or null for a typed directory. */
+function bucketsFor(
+  index: PageSlugIndex,
+  directory: ViewerPage["pageDirectory"],
+): { bySlug: Map<string, PageIndexEntry>; byAlias: Map<string, PageIndexEntry> } | null {
+  if (directory === "concepts") return { bySlug: index.conceptBySlug, byAlias: index.conceptByAlias };
+  if (directory === "queries") return { bySlug: index.queryBySlug, byAlias: index.queryByAlias };
+  return null;
+}
+
+/** Slug index for this page list, built on first use and then reused. */
+function slugIndexFor(pages: ReadonlyArray<PageIndexEntry>): PageSlugIndex {
+  let index = slugIndexCache.get(pages);
+  if (!index) {
+    index = buildSlugIndex(pages);
+    slugIndexCache.set(pages, index);
+  }
+  return index;
 }
 
 /**
@@ -113,11 +185,6 @@ export function resolveBareSlug(
  */
 function defaultPageId(directory: PageDirectory, entry: PageIndexEntry): PageId {
   return `${directory}/${entry.slug}`;
-}
-
-/** True when any of the page's declared aliases slugifies to `slug`. */
-function hasAliasSlug(page: PageIndexEntry, slug: string): boolean {
-  return (page.aliases ?? []).some((alias) => slugify(alias) === slug);
 }
 
 /**
