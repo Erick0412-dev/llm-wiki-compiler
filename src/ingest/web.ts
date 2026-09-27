@@ -7,9 +7,9 @@
  * cannot be parsed into readable content.
  */
 
-import { JSDOM } from "jsdom";
-import { Readability } from "@mozilla/readability";
-import TurndownService from "turndown";
+// jsdom, Readability and Turndown are loaded only when a URL is ingested:
+// this module is reachable from every CLI command, and jsdom alone adds about
+// 100 ms to start-up for commands that never touch the web.
 
 interface WebIngestResult {
   title: string;
@@ -26,7 +26,8 @@ async function fetchAndParse(url: string): Promise<Response> {
 }
 
 /** Extract readable content from raw HTML using Readability. */
-function extractReadableContent(html: string, url: string): { title: string; htmlContent: string } {
+async function extractReadableContent(html: string, url: string): Promise<{ title: string; htmlContent: string }> {
+  const [{ JSDOM }, { Readability }] = await Promise.all([import("jsdom"), import("@mozilla/readability")]);
   const dom = new JSDOM(html, { url });
   const reader = new Readability(dom.window.document);
   const article = reader.parse();
@@ -42,7 +43,8 @@ function extractReadableContent(html: string, url: string): { title: string; htm
 }
 
 /** Convert HTML to clean markdown using Turndown. */
-function convertToMarkdown(html: string): string {
+async function convertToMarkdown(html: string): Promise<string> {
+  const { default: TurndownService } = await import("turndown");
   const turndown = new TurndownService({ headingStyle: "atx" });
   return turndown.turndown(html);
 }
@@ -56,8 +58,8 @@ function convertToMarkdown(html: string): string {
 export default async function ingestWeb(url: string): Promise<WebIngestResult> {
   const response = await fetchAndParse(url);
   const html = await response.text();
-  const { title, htmlContent } = extractReadableContent(html, url);
-  const content = convertToMarkdown(htmlContent);
+  const { title, htmlContent } = await extractReadableContent(html, url);
+  const content = await convertToMarkdown(htmlContent);
 
   return { title, content };
 }
