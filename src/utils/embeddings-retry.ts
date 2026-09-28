@@ -148,6 +148,48 @@ function scopedPendingEntries(pending: PendingEmbedding[], quarantined: PendingE
   return mergeFreshAttempts(kept, [...kept.map(entry => entry.pageId), ...affectedIds]);
 }
 
+/**
+ * Durably queue affected IDs for the next refresh without attempting them,
+ * using the scoped refresh's own write-ahead step. Returns the IDs the retry
+ * marker's caps could not record, so callers can refuse rather than drop work.
+ * Throws unless the persisted markers show the IDs' exclusions lifted.
+ */
+export async function queueScopedEmbeddingRetry(root: string, affectedIds: PageId[]): Promise<PageId[]> {
+  const retry = await loadScopedEmbeddingRetry(root, affectedIds);
+  await retry.recordPending();
+  await assertExclusionsLifted(root, affectedIds);
+  return retry.deferred;
+}
+
+/**
+ * Lift every exclusion on explicitly changed IDs without queueing or attempting
+ * work: their quarantine entries and any exhausted pending entries (where
+ * quarantine overflow is retained). With refreshes disabled this is the whole
+ * handoff; a later enabled compile's content-hash discovery re-finds their
+ * stale vectors once nothing excludes them. Unrelated entries are untouched.
+ */
+export async function releaseScopedExclusions(root: string, changedIds: PageId[]): Promise<void> {
+  const { pending, quarantined } = await readScopedRetryState(root);
+  const changed = new Set(changedIds);
+  const keptQuarantine = quarantined.filter(entry => !changed.has(entry.pageId));
+  if (keptQuarantine.length !== quarantined.length) await writePendingEmbeddings(root, keptQuarantine, QUARANTINED_EMBEDDINGS_FILE);
+  const keptPending = pending.filter(entry => !(changed.has(entry.pageId) && exhausted(entry)));
+  if (keptPending.length !== pending.length) await writePendingEmbeddings(root, keptPending);
+  await assertExclusionsLifted(root, changedIds);
+}
+
+/**
+ * The marker writers swallow write and unlink failures, so callers that retire
+ * other recovery state must confirm the persisted result rather than trust them.
+ */
+async function assertExclusionsLifted(root: string, changedIds: PageId[]): Promise<void> {
+  const { pending, quarantined } = await readScopedRetryState(root);
+  const changed = new Set(changedIds);
+  if ([...quarantined, ...pending.filter(exhausted)].some(entry => changed.has(entry.pageId))) {
+    throw new Error("Embedding retry state could not be updated; changed pages are still excluded from refresh.");
+  }
+}
+
 /** Load retry state; only an explicit page change releases a quarantined id. */
 export async function loadEmbeddingRetry(root: string, changedPageIds: PageId[]): Promise<EmbeddingRetry> {
   const prior = await loadPendingEmbeddings(root, QUARANTINED_EMBEDDINGS_FILE);
