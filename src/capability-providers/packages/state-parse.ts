@@ -10,6 +10,7 @@ import {
   parseProviderCoordinate, parseProviderId, parseSemanticVersion, parseSha256Digest,
 } from "../ids.js";
 import type { Sha256Digest } from "../types.js";
+import { requireObject as object } from "../../utils/object-guard.js";
 import type {
   ProviderInstallRecordV1, ProviderInstallState, ProviderInstallationSourceV1,
   ProviderLocalApprovalV1, ProviderSourcesState,
@@ -112,12 +113,6 @@ function sourceType(value: unknown): ProviderInstallationSourceV1 {
 }
 
 // State and signed-envelope parsers retain distinct exact-shape boundaries.
-// fallow-ignore-next-line code-duplication
-function object(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${label} must be an object`);
-  return value as Record<string, unknown>;
-}
-
 function exact(obj: Record<string, unknown>, keys: readonly string[]): void {
   if (Object.keys(obj).sort().join("\0") !== [...keys].sort().join("\0")) {
     throw new Error("provider state record has unsupported or missing fields");

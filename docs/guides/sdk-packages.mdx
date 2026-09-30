@@ -3,9 +3,10 @@ title: "SDK packages and ownership"
 description: "Choose the standard compiler, engine-free SDK, or explicit local workflow composition."
 ---
 
-The package split described here belongs to the `1.4.0-dev.20260919` development
-candidate. It is not yet an npm release. Use a matching set of built tarballs
-when evaluating it; do not assume the new package names are available from the registry.
+The package split described here belongs to the `1.4.0-rc.1` release candidate.
+The standard package installs the matching supporting packages automatically.
+The candidate uses the npm `next` dist-tag; stable installations remain at
+`1.3.0`. Before registry publication, evaluate a matching set of built tarballs.
 
 ## Supported entry point
 
@@ -92,8 +93,9 @@ internal pins and source commit, and finishes with a fresh installation.
 Prerelease versions publish to a non-`latest` dist-tag (`next` by default).
 
 Scope ownership and trusted publishing access are release prerequisites; the
-naming change does not establish them. Each of the three packages needs its own
-trusted-publisher configuration before the first registry release.
+naming change does not establish them. First publications of new package names
+require authenticated bootstrap;
+subsequent workflow releases require a trusted publisher for each package.
 
 ## Contributing across packages
 

@@ -11,6 +11,7 @@ import type { TapPaths } from "./paths.js";
 import { withTapStateLock } from "./operator-lock.js";
 import { readTapState, writeTapState } from "./state-store.js";
 import type { TapSourceState } from "./state-types.js";
+import { sameTapTrustIdentity } from "./trust-identity.js";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -109,11 +110,7 @@ function assertPublicKey(key: PublisherKey): void {
 }
 
 function assertSameRetainedTap(existing: TapSourceState, proposed: TapSourceState): void {
-  const same = existing.indexUrl === proposed.indexUrl
-    && existing.origin === proposed.origin
-    && existing.currentTapKey.keyId === proposed.currentTapKey.keyId
-    && existing.currentTapKey.publicKey === proposed.currentTapKey.publicKey;
-  if (!same) throw new Error("tap trust identity cannot be replaced; use a new tap name");
+  if (!sameTapTrustIdentity(existing, proposed)) throw new Error("tap trust identity cannot be replaced; use a new tap name");
 }
 
 function summarize(source: TapSourceState, warnings: string[] = []): TapSummary {

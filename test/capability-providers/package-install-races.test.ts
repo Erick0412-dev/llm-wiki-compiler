@@ -9,7 +9,9 @@ import { lstat, mkdir, mkdtemp, realpath, rename, symlink, writeFile } from "nod
 import { afterEach, describe, expect, it } from "vitest";
 import { authorizeProviderPathsForTest } from "../../src/capability-providers/packages/paths.js";
 import { authorizedProviderRoots } from "./provider-roots.js";
-import { addProviderSource, installRemoteProvider, refreshProviderSource } from "../../src/capability-providers/packages/remote-install.js";
+import {
+  addProviderSource, installRemoteProvider, refreshProviderSource, type InstallRemoteProviderRequest,
+} from "../../src/capability-providers/packages/remote-install.js";
 import { readProviderInstallState } from "../../src/capability-providers/packages/state-store.js";
 import { installBuiltinProvider } from "../../src/capability-providers/packages/builtin.js";
 import { installLocalProvider } from "../../src/capability-providers/packages/local-install.js";
@@ -79,31 +81,16 @@ describe("provider package-cache confinement", () => {
     await expect(installBuiltinFixture(paths, fixture)).rejects.toThrow(/root|unauthorized/);
   });
 
-  // Each race fixture retains the mutation at the exact security boundary it exercises.
-  // fallow-ignore-next-line code-duplication
   it("rejects a package parent swapped after its binding check", async () => {
-    const fixture = providerDistribution();
-    const { paths, root } = await racePaths();
-    const outside = path.join(root, "outside"); await mkdir(outside);
-    await expect(installBuiltinFixture(paths, fixture, {
-      afterPackageParentCheckForTest: async (directory) => {
-        await rename(directory, `${directory}-moved`); await symlink(outside, directory);
-      },
-    })).rejects.toThrow(/changed|unauthorized/);
+    await expectBuiltinRaceRefusal((outside) => ({
+      afterPackageParentCheckForTest: (directory: string) => swapForOutsideLink(directory, outside),
+    }));
   });
 
-  // This second boundary check intentionally keeps the race setup visible.
-  // fallow-ignore-next-line code-duplication
   it("rechecks the package parent after staging opens", async () => {
-    const fixture = providerDistribution();
-    const { paths, root } = await racePaths();
-    const outside = path.join(root, "outside"); await mkdir(outside);
-    await expect(installBuiltinFixture(paths, fixture, {
-      afterPackageStagingOpenForTest: async (staging: string) => {
-        const directory = path.dirname(staging);
-        await rename(directory, `${directory}-moved`); await symlink(outside, directory);
-      },
-    } as never)).rejects.toThrow(/changed|unauthorized/);
+    await expectBuiltinRaceRefusal((outside) => ({
+      afterPackageStagingOpenForTest: (staging: string) => swapForOutsideLink(path.dirname(staging), outside),
+    }));
   });
 });
 
@@ -146,38 +133,47 @@ describe("provider local snapshot confinement", () => {
 
 describe("provider download confinement", () => {
   it("rejects a download parent swapped after its binding check", async () => {
-    const fixture = providerDistribution();
-    const { paths, root } = await racePaths();
-    await addProviderSource(paths, { name: "official", indexUrl: "https://tap.example/index.json", trustedKey: TAP.publicKey });
-    await refreshProviderSource(paths, "official", { seams: distributionSeams(fixture) });
-    const outside = path.join(root, "outside"); await mkdir(outside);
-    await expect(installRemoteProvider(paths, {
-      coordinate: COORDINATE, confirmedPackageDigest: String(fixture.envelope.payloadDigest),
-      confirmedIndexDigest: canonicalDigest(fixture.index), seams: distributionSeams(fixture),
-      afterDownloadParentCheckForTest: async (directory) => {
-        await rename(directory, `${directory}-moved`); await symlink(outside, directory);
-      },
-    })).rejects.toThrow(/changed|unauthorized/);
+    await expectRemoteRaceRefusal((outside) => ({
+      afterDownloadParentCheckForTest: (directory: string) => swapForOutsideLink(directory, outside),
+    }));
   });
 
-  // Parent-swap fixtures stay explicit so their callback timing remains reviewable.
-  // fallow-ignore-next-line code-duplication
   it("rechecks the download parent after the temporary leaf opens", async () => {
-    const fixture = providerDistribution();
-    const { paths, root } = await racePaths();
-    await addProviderSource(paths, { name: "official", indexUrl: "https://tap.example/index.json", trustedKey: TAP.publicKey });
-    await refreshProviderSource(paths, "official", { seams: distributionSeams(fixture) });
-    const outside = path.join(root, "outside"); await mkdir(outside);
-    await expect(installRemoteProvider(paths, {
-      coordinate: COORDINATE, confirmedPackageDigest: String(fixture.envelope.payloadDigest),
-      confirmedIndexDigest: canonicalDigest(fixture.index), seams: distributionSeams(fixture),
-      afterDownloadOpenForTest: async (leaf: string) => {
-        const directory = path.dirname(leaf);
-        await rename(directory, `${directory}-moved`); await symlink(outside, directory);
-      },
-    } as never)).rejects.toThrow(/changed|unauthorized/);
+    await expectRemoteRaceRefusal((outside) => ({
+      afterDownloadOpenForTest: (leaf: string) => swapForOutsideLink(path.dirname(leaf), outside),
+    }));
   });
 });
+
+/** Replace one authorized directory with a symlink to an outside root mid-install. */
+async function swapForOutsideLink(directory: string, outside: string): Promise<void> {
+  await rename(directory, `${directory}-moved`); await symlink(outside, directory);
+}
+
+type BuiltinRaceSeams = Omit<BuiltinProviderReleaseTestRequest, "archive" | "payload">;
+type RemoteRaceSeams = Omit<InstallRemoteProviderRequest, "coordinate" | "confirmedPackageDigest" | "confirmedIndexDigest" | "seams">;
+
+/** Install a builtin release whose race seam swaps a parent, and require refusal. */
+async function expectBuiltinRaceRefusal(seams: (outside: string) => BuiltinRaceSeams): Promise<void> {
+  const fixture = providerDistribution();
+  const { paths, root } = await racePaths();
+  const outside = path.join(root, "outside"); await mkdir(outside);
+  await expect(installBuiltinFixture(paths, fixture, seams(outside))).rejects.toThrow(/changed|unauthorized/);
+}
+
+/** Install a signed remote release whose race seam swaps a parent, and require refusal. */
+async function expectRemoteRaceRefusal(seams: (outside: string) => RemoteRaceSeams): Promise<void> {
+  const fixture = providerDistribution();
+  const { paths, root } = await racePaths();
+  await addProviderSource(paths, { name: "official", indexUrl: "https://tap.example/index.json", trustedKey: TAP.publicKey });
+  await refreshProviderSource(paths, "official", { seams: distributionSeams(fixture) });
+  const outside = path.join(root, "outside"); await mkdir(outside);
+  await expect(installRemoteProvider(paths, {
+    coordinate: COORDINATE, confirmedPackageDigest: String(fixture.envelope.payloadDigest),
+    confirmedIndexDigest: canonicalDigest(fixture.index), seams: distributionSeams(fixture),
+    ...seams(outside),
+  })).rejects.toThrow(/changed|unauthorized/);
+}
 
 async function racePaths() {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "llmwiki-provider-parent-race-")));

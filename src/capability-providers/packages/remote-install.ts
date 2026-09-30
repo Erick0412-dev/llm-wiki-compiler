@@ -6,7 +6,7 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
-import { lstat, open, unlink, type FileHandle } from "node:fs/promises";
+import { open, unlink } from "node:fs/promises";
 import path from "node:path";
 import { TextDecoder } from "node:util";
 import packageJson from "../../../package.json" with { type: "json" };
@@ -24,16 +24,17 @@ import { readIndexCache, writeIndexCache } from "../../profile/templates/taps/ca
 import { assertContinuityMatchesIndex, loadAcceptedIndex } from "../../profile/templates/taps/evidence.js";
 import type { TapPaths } from "../../profile/templates/taps/paths.js";
 import type { TapSourceState } from "../../profile/templates/taps/state-types.js";
+import { sameTapTrustIdentity } from "../../profile/templates/taps/trust-identity.js";
 import { MAX_COMPRESSED_PLATFORM_ARTIFACT_BYTES, MAX_SIGNED_PROVIDER_ENVELOPE_BYTES } from "../constants.js";
 import { parseProviderCoordinate, parseSha256Digest } from "../ids.js";
 import type { Sha256Digest } from "../types.js";
 import {
   publishArchiveProviderLocked, type InstalledProviderSnapshot,
 } from "./builtin.js";
+import { assertBoundProviderLeaf } from "./leaf-binding.js";
 import {
   assertAuthorizedProviderDirectory, assertAuthorizedProviderPaths,
-  ensureAuthorizedProviderDirectory, providerClockNow, type AuthorizedProviderDirectory,
-  type AuthorizedProviderPaths,
+  ensureAuthorizedProviderDirectory, providerClockNow, type AuthorizedProviderPaths,
 } from "./paths.js";
 import { parseProviderPackageEnvelope, selectHostPlatformArtifact } from "./protocol.js";
 import { readProviderSourcesState, withProviderStateLock, writeProviderSourcesState } from "./state-store.js";
@@ -43,6 +44,7 @@ const INDEX_LIMITS = limits(4 * 1024 * 1024, ["application/json"]);
 const PACKAGE_LIMITS = limits(MAX_SIGNED_PROVIDER_ENVELOPE_BYTES, ["application/json"]);
 const ARTIFACT_LIMITS = limits(MAX_COMPRESSED_PLATFORM_ARTIFACT_BYTES, ["application/octet-stream"]);
 const SOURCE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const DOWNLOAD_ESCAPED = "provider download leaf changed or escaped its authorized parent";
 
 export interface AddProviderSourceRequest {
   readonly name: string;
@@ -277,9 +279,9 @@ async function custodyDownload(
   const write = await open(leaf, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
   try {
     await afterOpenForTest?.(leaf);
-    await assertDownloadLeafBound(paths, downloads, leaf, write);
+    await assertBoundProviderLeaf(paths, downloads, leaf, write, DOWNLOAD_ESCAPED);
     await write.writeFile(bytes); await write.sync();
-    await assertDownloadLeafBound(paths, downloads, leaf, write);
+    await assertBoundProviderLeaf(paths, downloads, leaf, write, DOWNLOAD_ESCAPED);
   } finally {
     await write.close();
   }
@@ -287,10 +289,10 @@ async function custodyDownload(
     await assertAuthorizedProviderDirectory(paths, downloads);
     const read = await open(leaf, fsConstants.O_RDONLY | (process.platform === "win32" ? 0 : fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK));
     try {
-      await assertDownloadLeafBound(paths, downloads, leaf, read);
+      await assertBoundProviderLeaf(paths, downloads, leaf, read, DOWNLOAD_ESCAPED);
       const observed = await read.readFile();
       if (expectedDigest && digestBytes(observed) !== expectedDigest) throw new Error("provider download digest differs from signed metadata");
-      await assertDownloadLeafBound(paths, downloads, leaf, read);
+      await assertBoundProviderLeaf(paths, downloads, leaf, read, DOWNLOAD_ESCAPED);
       return observed;
     } finally {
       await read.close();
@@ -298,22 +300,6 @@ async function custodyDownload(
   } finally {
     await assertAuthorizedProviderDirectory(paths, downloads);
     await unlink(leaf).catch(() => {});
-  }
-}
-
-async function assertDownloadLeafBound(
-  paths: AuthorizedProviderPaths,
-  downloads: AuthorizedProviderDirectory,
-  leaf: string,
-  handle: FileHandle,
-): Promise<void> {
-  await assertAuthorizedProviderDirectory(paths, downloads);
-  // Download custody and package-evidence custody remain separate trust seams.
-  // fallow-ignore-next-line code-duplication
-  const [opened, current] = await Promise.all([handle.stat(), lstat(leaf)]);
-  if (!opened.isFile() || !current.isFile() || current.isSymbolicLink()
-    || opened.dev !== current.dev || opened.ino !== current.ino) {
-    throw new Error("provider download leaf changed or escaped its authorized parent");
   }
 }
 
@@ -384,13 +370,8 @@ function assertProviderTapKey(key: PublisherKey): void {
   assertEd25519PublicKey(key);
 }
 
-// Provider source state deliberately validates independently from template TAP management.
-// fallow-ignore-next-line code-duplication
 function assertSameSource(existing: TapSourceState, proposed: TapSourceState): void {
-  const same = existing.indexUrl === proposed.indexUrl && existing.origin === proposed.origin
-    && existing.currentTapKey.keyId === proposed.currentTapKey.keyId
-    && existing.currentTapKey.publicKey === proposed.currentTapKey.publicKey;
-  if (!same) throw new Error("provider source trust identity cannot be replaced");
+  if (!sameTapTrustIdentity(existing, proposed)) throw new Error("provider source trust identity cannot be replaced");
 }
 
 async function assertSourceUnchanged(paths: AuthorizedProviderPaths, expected: TapSourceState): Promise<void> {

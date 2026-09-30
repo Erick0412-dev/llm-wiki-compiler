@@ -14,6 +14,7 @@ import type {
   TapKeyRotation,
 } from "./types.js";
 import { parseBoundedUniqueJson } from "./json.js";
+import { requireObject as record } from "../../../utils/object-guard.js";
 
 const MAX_SIGNED_PACKAGE_BYTES = 2 * 1024 * 1024;
 const MAX_TAP_INDEX_BYTES = 4 * 1024 * 1024;
@@ -188,11 +189,6 @@ function boundedArray(value: unknown, label: string): unknown[] {
   if (!Array.isArray(value)) throw new Error(`${label} must be an array`);
   if (value.length > MAX_INDEX_ITEMS) throw new Error(`${label} exceeds its item cap`);
   return value;
-}
-
-function record(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${label} must be an object`);
-  return value as Record<string, unknown>;
 }
 
 function exactKeys(obj: Record<string, unknown>, expected: string[], optional: string[] = []): void {

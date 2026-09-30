@@ -81,7 +81,8 @@ export const LIFECYCLE_MODULE_OWNERSHIP: readonly LifecycleModuleOwnershipV1[] =
   { path: "src/preparations/inputs.ts", role: "unrelated-preparation", rawFilesystemAccess: true },
   { path: "src/preparations/intent-compiler.ts", role: "unrelated-preparation", rawFilesystemAccess: false },
   { path: "src/preparations/intent-request.ts", role: "unrelated-preparation", rawFilesystemAccess: false },
-  { path: "src/preparations/key-epoch.ts", role: "filesystem-owner", rawFilesystemAccess: true },
+  // Its lstat moved into utils/key-leaf-health.ts; key reads stay behind confined-read.
+  { path: "src/preparations/key-epoch.ts", role: "filesystem-owner", rawFilesystemAccess: false },
   { path: "src/preparations/lifecycle-fs/bounds.ts", role: "filesystem-owner", rawFilesystemAccess: false },
   { path: "src/preparations/lifecycle-fs/directory-observation.ts", role: "filesystem-owner", rawFilesystemAccess: true },
   { path: "src/preparations/lifecycle-fs/key-observation.ts", role: "filesystem-owner", rawFilesystemAccess: false },
@@ -228,6 +229,8 @@ export const LIFECYCLE_MODULE_OWNERSHIP: readonly LifecycleModuleOwnershipV1[] =
   { path: "src/utils/inventory-arithmetic.ts", role: "shared-primitive", rawFilesystemAccess: false },
   // The no-follow I/O moved here; store classification remains in orphan-scan.
   { path: "src/utils/inventory-scan.ts", role: "shared-primitive", rawFilesystemAccess: true },
+  // Key-leaf mode, ownership and link-count health shared by both key epochs.
+  { path: "src/utils/key-leaf-health.ts", role: "shared-primitive", rawFilesystemAccess: true },
   { path: "src/utils/keyed-fifo.ts", role: "shared-primitive", rawFilesystemAccess: false },
   { path: "src/utils/lock-owner.ts", role: "shared-primitive", rawFilesystemAccess: true },
   { path: "src/utils/lock-publication.ts", role: "shared-primitive", rawFilesystemAccess: true },
@@ -393,6 +396,7 @@ export const EXPECTED_MODULE_ROLES = [
   "src/utils/hmac-equal.ts :: shared-primitive",
   "src/utils/inventory-arithmetic.ts :: shared-primitive",
   "src/utils/inventory-scan.ts :: shared-primitive",
+  "src/utils/key-leaf-health.ts :: shared-primitive",
   "src/utils/keyed-fifo.ts :: shared-primitive",
   "src/utils/lock-owner.ts :: shared-primitive",
   "src/utils/lock-publication.ts :: shared-primitive",

@@ -31,7 +31,6 @@ const ACTOR: { id: string; surface: "cli" } = { id: "operator", surface: "cli" }
 
 /** Stage one durable preparation and return its exact current run binding. */
 export async function stagePreparation(root: string): Promise<{ binding: PreparationRunBinding; manifest: PreparationManifestV1 }> {
-  // fallow-ignore-next-line code-duplication
   const staged = await stagePreparationLocked(root, stageRequest(fixturePlan()));
   if (staged.status !== "staged") throw new Error(`not staged: ${staged.status}`);
   const key = await readPreparationKey(root);
@@ -44,8 +43,7 @@ export async function stagePreparation(root: string): Promise<{ binding: Prepara
 }
 
 /** Append one authenticated driving transition from the current predecessor. */
-// fallow-ignore-next-line code-duplication
-async function drive(
+export async function drive(
   root: string, binding: PreparationRunBinding, type: string, stateAfter: string, payload: unknown, at: string,
 ): Promise<void> {
   const read = await readPreparationRun(root, binding);

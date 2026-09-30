@@ -381,13 +381,36 @@ volta run --node 24 npx mint dev --port 3001
 
 ## Current release
 
-`main` carries the `1.4.0-dev.20260919` development candidate: a local
-integration build, not an npm release. It adds the split-package SDK, generic
-domain record preparation, operation-bundle authority, and provider-backed
-product actions while preserving the public compiler and viewer. Standalone
-AutoSci/Newsroom process packages are not included; their builtin ontology
-templates remain supported. See the [changelog](CHANGELOG.md) `Unreleased`
-section and [`ARCHITECTURE.md`](ARCHITECTURE.md#development-runtime-authority).
+**Release candidate `1.4.0-rc.1`:**
+
+- Review answers before publication with `query --save --review`, and approve
+  candidate batches with one finalization.
+- Reuse extraction for unchanged sources, share compile and query prompt
+  prefixes, and inspect stage timing with an absolute `LLMWIKI_STAGE_TIMING_FILE`.
+- Report only pages supplied to the answer model; embedding failures fall back
+  to page selection with a warning by default.
+- Keep embedding retry budgets tied to page content, with an opt-out that leaves
+  embedding and retry stores untouched.
+- Add generic domain records, preparations, retained artifacts and local workflow
+  composition through the standard SDK. The engine-free core and local engine
+  ship as exact matching supporting dependencies.
+- Compare source excerpts and pending proposals in the experimental, read-only
+  source-review cockpit, explicitly enabled through the SDK on loopback.
+
+This is a prerelease candidate for `1.4.0`; the stable npm release remains
+`1.3.0`. Registry publication uses the `next` dist-tag, leaving `latest` unchanged.
+For registry testing after publication:
+
+```bash
+npm install --global llm-wiki-compiler@1.4.0-rc.1
+```
+
+Existing CLI and standard `createWiki` entry points remain available. Experimental
+artifact types and workflow statuses can require source updates; read the
+[SDK upgrade notes](docs/guides/sdk-upgrade.mdx) before upgrading. Standalone
+AutoSci/Newsroom process packages are separate; their builtin ontology templates
+remain supported. See the [changelog](CHANGELOG.md) for the candidate's changes
+and limits.
 
 **Released `1.3.0`:**
 

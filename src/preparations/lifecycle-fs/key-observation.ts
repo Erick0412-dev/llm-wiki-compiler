@@ -7,6 +7,7 @@
 import path from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import { openConfinedLeaf } from "../../utils/confined-read.js";
+import { healthyKeyMetadata } from "../../utils/key-leaf-health.js";
 import { readOpenedPreparationKey } from "../key-epoch.js";
 import { preparationKeyEpochId } from "../run-integrity.js";
 import type { PreparationLifecycleNamespaceV1 } from "./types.js";
@@ -32,13 +33,6 @@ function openedKeyMatches(
     expected.dev, expected.ino, expected.size, expected.mode, expected.nlink, expected.uid,
   ].join(":");
   return actualIdentity === expectedIdentity && healthyKeyMetadata(opened.mode, opened.uid);
-}
-
-/** Enforce mode 0600 and current ownership on hosts that expose POSIX identity. */
-function healthyKeyMetadata(mode: number, uid: number): boolean {
-  const modeIsPrivate = process.platform === "win32" || (mode & 0o777) === 0o600;
-  const ownerIsCurrent = typeof process.getuid !== "function" || uid === process.getuid();
-  return modeIsPrivate && ownerIsCurrent;
 }
 
 /** Capture and decode the bound key once, never accepting a caller-provided key. */

@@ -24,8 +24,7 @@ import type { OperationRun } from "../../src/operation-bundles/run-types.js";
 import type { OperationRunId } from "../../src/operation-bundles/ids.js";
 import { parseSha256Digest } from "../../src/capability-providers/ids.js";
 import { readPreparationManifest } from "../../src/preparations/manifest-store.js";
-import { appendPreparationTransitionLocked, handoffStartBinding, readPreparationRun } from "../../src/preparations/run-store.js";
-import { preparationRunPredecessor } from "../../src/preparations/run-integrity.js";
+import { handoffStartBinding, readPreparationRun } from "../../src/preparations/run-store.js";
 import { createOperationIntentCompilerV1, type HostMutationTargetV1 } from "../../src/preparations/intent-compiler.js";
 import { normalizeProviderProposals } from "../../src/preparations/proposals.js";
 import { decideReconciliation } from "../../src/preparations/reconciliation.js";
@@ -36,7 +35,7 @@ import type { PreparationHandoffObligationsV1 } from "../../src/preparations/ser
 import type { HandoffBundleAuthoritiesV1 } from "../../src/preparations/handoff-bundle.js";
 import type { PreparationRunBinding } from "../../src/preparations/run-types.js";
 import type { PreparationEvidenceRef } from "../../src/operation-bundles/types.js";
-import { stagePreparation } from "./lifecycle-fixture.js";
+import { drive, stagePreparation } from "./lifecycle-fixture.js";
 import { adapters, ATTEMPT, contract, evidence, identitySetRef, PROVIDER_PIN } from "./task7-fixture.js";
 
 const ACTOR = { id: "operator", surface: "cli" } as const;
@@ -200,15 +199,6 @@ export async function stageReadyPreparation(root: string): Promise<PreparationRu
   await drive(root, binding, "phase-started", "running", { kind: "phase", phaseInstanceId: `phi_${"a".repeat(64)}`, phaseState: "running" }, "2026-07-23T00:01:00.000Z");
   await drive(root, binding, "handoff-ready", "handoff-ready", { kind: "none" }, "2026-07-23T00:02:00.000Z");
   return binding;
-}
-
-/** Append one driving transition using the current authenticated predecessor. */
-async function drive(root: string, binding: PreparationRunBinding, type: string, stateAfter: string, payload: unknown, at: string): Promise<void> {
-  const read = await readPreparationRun(root, binding);
-  if (read.status !== "ok") throw new Error(`run ${read.status}`);
-  await appendPreparationTransitionLocked(root, binding, preparationRunPredecessor(read.run), {
-    type: type as never, stateAfter: stateAfter as never, actor: ACTOR, at, payload: payload as never,
-  });
 }
 
 /** Build one complete handoff request for a staged, ready preparation. */
