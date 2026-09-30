@@ -57,6 +57,11 @@ export function renderReviewsList(main, payload) {
   main.innerHTML = "";
   main.className = "main-pane list-pane";
   main.appendChild(heading("h1", "Reviews"));
+  if (payload.sourceChanges === true) {
+    const link = el("a", undefined, "Compare changed sources and proposed wiki updates");
+    link.href = "#/source-changes";
+    main.append(link);
+  }
   appendTruncationNotice(main, reviews.length, totalIn(payload, reviews.length));
   const body = el("div", "list-body");
   main.appendChild(body);

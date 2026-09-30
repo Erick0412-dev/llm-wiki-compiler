@@ -38,6 +38,7 @@ import { buildViewerSnapshot } from "./snapshot.js";
 import { handleApiWorkflowRun, type ViewerDeps } from "./workflow-run-projection.js";
 import { handleApiStageOutput, parseStageOutputPath } from "./workflow-artifact.js";
 import { handleApiWorkflowPdf, parsePdfPath } from "./workflow-pdf.js";
+import { collectSourceReview } from "./source-review/report.js";
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "::1"]);
 
@@ -49,6 +50,8 @@ const CONTENT_SECURITY_POLICY =
 
 /** Configuration knobs accepted by `startViewerServer`. */
 interface ViewerServerConfig {
+  /** @experimental Opt-in, loopback-only source comparison. Off by default. */
+  sourceChanges?: boolean;
   /** Opt-in journey navigation; never advertised on a non-loopback bind. */
   workflowJourneys?: boolean;
   /** Listening host. `--allow-lan` callers set this to a non-loopback bind address. */
@@ -120,6 +123,8 @@ export async function startViewerServer(
 
 /** Options for the public {@link startViewer} constructor. */
 export interface StartViewerOptions {
+  /** @experimental Opt-in, loopback-only source comparison. Off by default. */
+  sourceChanges?: boolean;
   /** Show journey links on loopback; enabled by default for this new SDK constructor. */
   workflowJourneys?: boolean;
   /** Absolute project root the viewer reads from. */
@@ -145,7 +150,8 @@ export async function startViewer(
 ): Promise<ViewerServerHandle> {
   const snapshot = await buildViewerSnapshot(options.root);
   const timeout = options.providerTimeoutMs;
-  const config = { host: options.host, port: options.port, workflowJourneys: options.workflowJourneys ?? true,
+  const config = { host: options.host, port: options.port, sourceChanges: options.sourceChanges,
+    workflowJourneys: options.workflowJourneys ?? true,
     ...(timeout === undefined ? {} : { providerTimeoutMs: timeout }) };
   return startViewerServer(snapshot, config, deps);
 }
@@ -197,6 +203,8 @@ async function routeRegistered(
 ): Promise<void> {
   if (parsedUrl.pathname === "/") return handleShell(res);
   if (parsedUrl.pathname.startsWith("/assets/")) return handleAsset(res, parsedUrl.pathname);
+  if (parsedUrl.pathname === "/api/reviews") return handleApiReviews(res, snapshot.root, sourceChangesEnabled(config));
+  if (parsedUrl.pathname === "/api/source-changes") return handleSourceChanges(res, snapshot.root, config);
   const snapshotOnly = SNAPSHOT_ONLY_HANDLERS.get(parsedUrl.pathname);
   if (snapshotOnly) return snapshotOnly(res, snapshot);
   return routeLiveResources(res, parsedUrl, snapshot, config, deps);
@@ -268,7 +276,6 @@ const SNAPSHOT_ONLY_HANDLERS: ReadonlyMap<
   ["/api/pages", handleApiPages],
   ["/api/health", handleApiHealth],
   ["/api/graph", handleApiGraph],
-  ["/api/reviews", (res, snapshot) => handleApiReviews(res, snapshot.root)],
 ]);
 
 /**
@@ -287,6 +294,7 @@ const REGISTERED_EXACT_PATHS: ReadonlySet<string> = new Set([
   "/api/graph",
   "/api/workflow-runs",
   "/api/reviews",
+  "/api/source-changes",
   ...ARTIFACT_PATHS,
 ]);
 
@@ -471,8 +479,23 @@ async function handleApiWorkflowRuns(res: ServerResponse, root: string, journeys
  * read-only — no approve/reject, and the projection drops the candidate `body`
  * and every absolute path (see `buildReviewsEnvelope`).
  */
-async function handleApiReviews(res: ServerResponse, root: string): Promise<void> {
-  writeJson(res, 200, buildReviewsEnvelope(await listCandidatePage(root, REVIEW_LIST_LIMIT)));
+async function handleApiReviews(res: ServerResponse, root: string, sourceChanges: boolean): Promise<void> {
+  const payload = buildReviewsEnvelope(await listCandidatePage(root, REVIEW_LIST_LIMIT));
+  writeJson(res, 200, { ...payload, ...(sourceChanges ? { sourceChanges: true } : {}) });
+}
+
+/** Source bodies are never served through this opt-in route on a LAN binding. */
+function sourceChangesEnabled(config: ViewerServerConfig): boolean {
+  return config.sourceChanges === true && LOOPBACK_HOSTS.has(config.host);
+}
+
+/** Read current source/page/proposal bytes on request, never from startup state. */
+async function handleSourceChanges(res: ServerResponse, root: string, config: ViewerServerConfig): Promise<void> {
+  res.setHeader("Cache-Control", "no-store");
+  if (!sourceChangesEnabled(config)) {
+    writeJsonError(res, 404, "not_found", "Source comparison is not enabled."); return;
+  }
+  writeJson(res, 200, await collectSourceReview(root));
 }
 
 /** `/api/health` — cheap status summary. */

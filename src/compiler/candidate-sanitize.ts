@@ -11,6 +11,7 @@
 import type { ReviewCandidate, SourceState } from "../utils/types.js";
 import type { HeldReason, PolicyHeldReasonCode, ReviewMode } from "../review/policy.js";
 import type { TrustDecision } from "../trust/decision.js";
+import { assertSafeSourceId } from "../sources/source-record.js";
 
 /** Default metadata for legacy `compile --review` callers. */
 export const DEFAULT_HELD_REASONS: HeldReason[] = [{ code: "manual-review-requested" }];
@@ -141,9 +142,14 @@ function sanitizeHeldReasons(raw: unknown): HeldReason[] {
   return valid.length > 0 ? valid : DEFAULT_HELD_REASONS;
 }
 
-/** True when a source-state key is a safe plain basename. */
+/** Preserve normalized nested source IDs without admitting traversal or object keys. */
 function isSourceKeySafe(key: string): boolean {
-  return !key.includes("/") && !key.includes("\\") && !key.includes("..");
+  if (!key || Object.hasOwn(Object.prototype, key)) return false;
+  try {
+    // Legacy state may name non-Markdown inputs; validate the path, not its format.
+    assertSafeSourceId(`${key}/_validation.md`);
+    return true;
+  } catch { return false; }
 }
 
 /** Validate and filter a raw `sourceStates` value from disk. */

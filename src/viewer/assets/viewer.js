@@ -42,6 +42,7 @@ import {
   renderSourcesList,
 } from "./viewer-lists.js";
 import { renderReviewsList } from "./viewer-reviews.js";
+import { loadSourceChanges } from "./viewer-source-changes.js";
 import { renderWorkflowRunsList } from "./viewer-workflows.js";
 import { invalidateJourneyNavigation, journeyRoute, renderJourneyRoute } from "./viewer-journey-route.js";
 import { renderPipeline } from "./viewer-pipeline.js";
@@ -65,6 +66,7 @@ const STATIC_ROUTES = new Map([
   ["#/queries", { kind: "queries" }],
   ["#/sources", { kind: "sources" }],
   ["#/reviews", { kind: "reviews" }],
+  ["#/source-changes", { kind: "sourceChanges" }],
   ["#/workflows", { kind: "workflows" }],
   ["#/pipeline", { kind: "pipeline" }],
 ]);
@@ -229,6 +231,7 @@ const ROUTE_RENDERERS = {
   queries: (main) => renderListRoute(main, renderQueriesList),
   sources: (main) => renderListRoute(main, renderSourcesList),
   reviews: (main) => renderFetchedRoute(main, "/api/reviews", renderReviewsList),
+  sourceChanges: (main) => loadSourceChanges(main),
   workflows: (main) => renderFetchedRoute(main, "/api/workflow-runs", renderWorkflowRunsList),
   journey: (main, route) => { clearSupportRail(); return renderJourneyRoute(main, route); },
   pipeline: (main) => renderListRoute(main, renderPipeline),

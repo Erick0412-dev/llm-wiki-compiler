@@ -85,6 +85,8 @@ const THEME_BOOT_SCRIPT = "viewer-theme-boot.js";
  */
 const MODULE_ORDER = [
   "viewer-dom.js",
+  // Imported by viewer-source-changes.js, which sorts before its command helper.
+  "viewer-source-command.js",
   "viewer-format.js",
   "viewer-theme.js",
   "viewer-routes.js",

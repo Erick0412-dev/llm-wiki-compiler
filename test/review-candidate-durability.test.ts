@@ -122,7 +122,7 @@ describe("Finding 2 — sourceStates validation at candidate read time", () => {
     expect(candidate?.sourceStates?.["../evil.md"]).toBeUndefined();
   });
 
-  it("drops sourceState entry with a path-separator key (dir/source.md)", async () => {
+  it("preserves a normalized nested source-state key (dir/source.md)", async () => {
     const id = "sep-key-cand";
     await seedRawCandidate(root.dir, `${id}.json`, {
       ...baseCandidate(id, "sep-key"),
@@ -132,7 +132,7 @@ describe("Finding 2 — sourceStates validation at candidate read time", () => {
     });
     const candidate = await readCandidate(root.dir, id);
     expect(candidate).not.toBeNull();
-    expect(candidate?.sourceStates?.["dir/source.md"]).toBeUndefined();
+    expect(candidate?.sourceStates?.["dir/source.md"]?.hash).toBe("abc123");
   });
 
   it("keeps a fully valid sourceState entry after read", async () => {
