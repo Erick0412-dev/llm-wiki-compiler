@@ -6,7 +6,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
-import { chmod, lstat, open, readdir, rename, rm, type FileHandle } from "node:fs/promises";
+import { chmod, lstat, open, readdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { canonicalDigest } from "../../profile/templates/signing/canonical.js";
 import { readConfinedLeaf } from "../../utils/confined-read.js";
@@ -19,6 +19,7 @@ import {
 import {
   persistProviderInstall, type InstalledProviderSnapshot,
 } from "./install-persistence.js";
+import { assertBoundProviderLeaf } from "./leaf-binding.js";
 import {
   assertAuthorizedProviderDirectory, assertAuthorizedProviderPaths,
   authorizedProviderDirectoryRealPath, bindAuthorizedProviderChildDirectory,
@@ -33,6 +34,8 @@ import {
 import { readProviderInstallState, withProviderStateLock } from "./state-store.js";
 import type { ProviderInstallRecordV1, ProviderInstallationSourceV1 } from "./state-types.js";
 export type { InstalledProviderSnapshot } from "./install-persistence.js";
+
+const EVIDENCE_ESCAPED = "provider package evidence changed or escaped its authorized parent";
 
 /** Internal verified bytes ready for publication while holding the state lock. */
 export interface ArchivePublicationRequest {
@@ -218,26 +221,12 @@ async function writeEvidence(
   const leaf = path.join(staging.path, "package.json");
   const handle = await open(leaf, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o400);
   try {
-    await assertLeafBound(paths, staging, leaf, handle);
+    await assertBoundProviderLeaf(paths, staging, leaf, handle, EVIDENCE_ESCAPED);
     await handle.writeFile(text, "utf8");
     await handle.sync();
-    await assertLeafBound(paths, staging, leaf, handle);
+    await assertBoundProviderLeaf(paths, staging, leaf, handle, EVIDENCE_ESCAPED);
   } finally {
     await handle.close();
-  }
-}
-
-async function assertLeafBound(
-  paths: AuthorizedProviderPaths,
-  directory: AuthorizedProviderDirectory,
-  leaf: string,
-  handle: FileHandle,
-): Promise<void> {
-  await assertAuthorizedProviderDirectory(paths, directory);
-  const [opened, current] = await Promise.all([handle.stat(), lstat(leaf)]);
-  if (!opened.isFile() || !current.isFile() || current.isSymbolicLink()
-    || opened.dev !== current.dev || opened.ino !== current.ino) {
-    throw new Error("provider package evidence changed or escaped its authorized parent");
   }
 }
 

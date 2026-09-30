@@ -12,6 +12,13 @@
  * A slice that legitimately changes a corpus file must update this manifest, which is
  * exactly the explicit disposition the migration requires. The friction is the feature.
  *
+ * RE-BASELINED 2026-09-30 for the codebase-health duplication gate: the shared
+ * `drive` helper in lifecycle-fixture.ts is now exported so handoff-fixture.ts
+ * reuses it instead of carrying a byte-identical copy, and two inline
+ * duplication suppressions that hid the copies from the report (but not from
+ * the gate's count) are gone. Only the whole-file hash of lifecycle-fixture.ts
+ * moves. No scenario body, assertion, identity or classification changed.
+ *
  * RE-BASELINED 2026-09-21 for reviewed CI deduplication: RST-009 delegates its
  * completed-sweep assertion to lifecycle-fixture.ts. PRN-006/007/008 delegate the
  * identical authenticated resume request to resumePrune; their refusal, retained
@@ -210,7 +217,7 @@ export const FROZEN_REGRESSIONS = [
   },
   {
     path: "test/preparations/lifecycle-fixture.ts",
-    fileSha256: "9fa999bb5447cdc520aea41c988a0dbda9334bc09b59bfb15c2109246705f39e",
+    fileSha256: "3d621e8e976e424298f2a910e1119baee905fb34494e081fd007cbb6143e0ef7",
     scenarios: [
 
     ],

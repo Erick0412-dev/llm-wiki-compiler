@@ -11,11 +11,10 @@
  * and Milestone A key epochs are separate.
  */
 
-import { randomBytes } from "node:crypto";
-import { lstat } from "node:fs/promises";
 import { AtomicWriteCollisionError, atomicWriteNoReplaceDurable } from "../utils/atomic-write.js";
 import { durableTempPath, durableWritingPath } from "../utils/atomic-write-no-replace-durable.js";
 import { openConfinedLeaf, readWithinCapOrElse } from "../utils/confined-read.js";
+import { healthyKeyLinks, healthyKeyMetadata, recoveredEpochKey } from "../utils/key-leaf-health.js";
 import path from "node:path";
 import { MAX_PREPARATION_KEY_FILE_BYTES } from "./constants.js";
 import { preparationKeyEpochId } from "./run-integrity.js";
@@ -93,33 +92,11 @@ export async function readOpenedPreparationKey(
   return read.kind === "ok" ? decodePreparationKey(read.body) : null;
 }
 
-/** Accept one stable link, or exactly one named protocol-owned companion alias. */
-// fallow-ignore-next-line code-duplication
-async function healthyKeyLinks(
-  opened: Extract<Awaited<ReturnType<typeof openConfinedLeaf>>, { kind: "confirmed" }>,
-  reservedAlias: string | undefined,
-): Promise<boolean> {
-  if (opened.nlink === 1) return true;
-  if (opened.nlink !== 2 || reservedAlias === undefined) return false;
-  const alias = await lstat(reservedAlias).catch(() => null);
-  return alias !== null && alias.isFile() && !alias.isSymbolicLink()
-    && alias.dev === opened.dev && alias.ino === opened.ino;
-}
-
 /** Reuse a synced ready-only crash key; incomplete scratch bytes are disposable. */
-// fallow-ignore-next-line code-duplication
 async function keyForEmptyEpochPublication(root: string): Promise<Buffer> {
   const file = preparationKeyFile(root);
   const ready = await readPreparationKeyLeaf(root, durableTempPath(file), durableWritingPath(file));
-  if (ready.status === "unavailable") throw new Error("preparation key recovery is unavailable");
-  return ready.status === "ok" ? ready.key : randomBytes(PREPARATION_KEY_BYTES);
-}
-
-/** Enforce mode 0600 and current ownership on POSIX hosts that expose uid. */
-// fallow-ignore-next-line code-duplication
-function healthyKeyMetadata(mode: number, uid: number): boolean {
-  if (process.platform !== "win32" && (mode & 0o777) !== 0o600) return false;
-  return typeof process.getuid !== "function" || uid === process.getuid();
+  return recoveredEpochKey(ready, PREPARATION_KEY_BYTES, "preparation");
 }
 
 /** Require the exact five-part active inventory and prove every byte count is zero. */
