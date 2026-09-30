@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.1] - 2026-09-30
+
+### Highlights
+
+- Review generated answers before publication and approve candidate batches with
+  shared finalization and durable embedding recovery.
+- Reuse source extraction, share prompt prefixes, and report grounded query
+  pages with embedding fallback enabled by default.
+- Ship the compiler, engine-free core and local workflow engine as one matching
+  distribution. Existing users continue installing `llm-wiki-compiler`.
+- Preview source changes in an optional read-only viewer cockpit.
+
+### Upgrade notes and limits
+
+- This prerelease uses the npm `next` dist-tag; `latest` remains at `1.3.0`.
+- Experimental artifact and workflow types can require consumer updates. See the
+  [SDK upgrade notes](docs/guides/sdk-upgrade.mdx).
+- New query defaults return embedding warnings and omit pages whose contents
+  could not reach the answer model. Set `embeddingFailure: "throw"` to keep
+  strict embedding failures.
+- Prompt version `v5` can regenerate pages on the next compile. Embedding
+  recovery may requeue older quarantined work; consult the configuration guide
+  before upgrading a large wiki.
+- The source-review cockpit is off by default, read-only, and loopback-only.
+  Native Windows validation and the live-provider follow-ups recorded for
+  `1.3.0` remain outstanding.
+
 ### Added
 
 - Experimental source-review cockpit, explicitly enabled with SDK
@@ -31,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   candidate. Pending targets must be published first; edited answer bodies
   require regeneration and restaging.
 
-- Split-package development distribution: `@atomicstrata/llmwiki-core` is engine-free;
+- Split-package distribution: `@atomicstrata/llmwiki-core` is engine-free;
   `@atomicstrata/llmwiki-local-workflows` takes an explicit core host; the standard
   `llm-wiki-compiler` package composes both at matching versions and retains
   existing CLI/SDK entry points. Duplicate-core composition now fails before
@@ -41,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the release workflow now publishes core, engine and facade in that order from
   one commit, and prerelease versions publish to a non-`latest` dist-tag.
 
-- Local `1.4.0-dev.20260919` integration candidate: generic domain SDK record
+- Generic domain SDK record
   preparation/observation/retirement, operation-bundle authority and recovery,
   preparation lifecycle, configurable operation packs and capability providers.
   The SDK does not expose operator apply. Standalone product-process packages
@@ -775,7 +802,8 @@ Initial release.
 - Atomic writes, lock-protected compilation, orphan marking for deleted sources.
 - `[[wikilink]]` resolution and auto-generated `wiki/index.md`.
 
-[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0-rc.1...HEAD
+[1.4.0-rc.1]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0-rc.1
 [1.3.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.0.0...v1.1.0
