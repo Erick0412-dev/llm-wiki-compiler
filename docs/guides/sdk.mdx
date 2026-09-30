@@ -62,6 +62,52 @@ const status = await wiki.status();
 console.log(`${status.pages.total} pages, ${status.sources} sources`);
 ```
 
+## Source-review viewer preview
+
+Enable the experimental, read-only source-review cockpit explicitly when starting
+the viewer through the SDK. Ordinary `llmwiki view` behavior is unchanged.
+
+```ts
+import { startViewer } from "llm-wiki-compiler";
+
+const viewer = await startViewer({
+  root: "/absolute/path/to/my-wiki",
+  host: "127.0.0.1",
+  port: 0,
+  sourceChanges: true,
+});
+console.log(`http://127.0.0.1:${viewer.port}/#/source-changes`);
+```
+
+Choose a page in **Review queue**, then compare its current source excerpts,
+saved wiki text, and pending proposals. **Proposal to inspect** selects the
+proposal shown. Changed metadata expands automatically. **Next: review the
+proposed changes** shows its file identity, project directory, and a copyable
+macOS/Linux terminal command. **Copy terminal command** only writes to your
+clipboard; it never executes a command. If clipboard access fails, copy the
+visible command manually. You need `llmwiki` on your terminal's `PATH`.
+
+The cockpit does not generate, approve, reject, or apply proposals. Generation
+remains an explicit `llmwiki compile --review` command using your configured
+provider. Approval remains in the existing [review workflow](/cli/review).
+Matching hashes do not establish factual correctness or human approval.
+
+This preview is enabled only for loopback binds. It exposes local source text,
+candidate text, and the project path to your local browser using the viewer's
+existing host/origin restrictions. Do not expose it through a public proxy.
+Reads do not write project files. Each **Check files again** reads current disk
+state; a failed refresh clears the previous comparison.
+
+The view supports default concept pages, not arbitrary typed-page ownership.
+It shows at most 100 supported pages and reads at most 100 pending candidate
+files, with visible shown/total counts. It previews at most 20 contributing
+sources per page and 100 unique sources per observation. Source excerpts are
+limited to 12,000 characters or 200 lines; page and proposal previews are limited
+to 80,000 characters. Unavailable, changed-during-read, and shortened text is
+labeled. These are live observations, not an atomic snapshot or a historical
+source diff. Missing target bindings remain visibly unverified. The cockpit
+does not authenticate whether a proposal was model-generated or authored.
+
 ## Method reference
 
 ### Core versus workflow methods

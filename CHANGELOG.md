@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Experimental source-review cockpit, explicitly enabled with SDK
+  `startViewer({ sourceChanges: true })` on loopback. Compare current source
+  excerpts, saved concept pages, and pending proposals; inspect metadata changes
+  and copy a shell-quoted terminal command for the selected candidate file.
+  This is read-only and off by default; it does not generate or approve changes.
+- Nested source-state bindings now survive candidate sanitization, so approving
+  a reviewed update retains normalized nested source hashes rather than
+  silently dropping them. Pending proposals can cover unchanged nested sources;
+  batches with conflicting revisions of one nested source now refuse before
+  writing. Unsafe paths remain rejected.
+
 - **Batch review approval.** `llmwiki review approve-batch --input <manifest.json>` approves a set of review candidates with one finalization instead of one per candidate. Contributed by @LorenzoGentile in #231: single and batch approval now share one finalizer that keeps single approval's preconditions, recovery gate and citation policy; the batch records its embedding work in `.llmwiki/review-embedding-intent.json` before promoting any page, so an interrupted batch recovers its own work without touching unrelated retries; and a store that needs migration defers instead of spending retries. See the `review` command docs for the full contract.
 
 - Validated answer publication: `query --save --review` and SDK `review: true`

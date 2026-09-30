@@ -446,13 +446,25 @@ export interface CandidatePage {
  * @returns The bounded slice and the true pending total.
  */
 export async function listCandidatePage(root: string, limit: number): Promise<CandidatePage> {
+  const page = await listCandidateIdentityPage(root, limit);
+  return { candidates: page.entries.map(entry => entry.candidate), total: page.total };
+}
+
+/** Bounded read retaining the file identity used by targeted review commands. */
+export async function listCandidateIdentityPage(root: string, limit: number): Promise<{
+  entries: Array<{ fileId: string; candidate: ReviewCandidate }>; total: number;
+}> {
   // Plain sort: lexicographic by UTF-16 code unit, so the slice is identical on
   // every machine. `localeCompare` would make it depend on the host locale.
   const ids = (await pendingCandidateFileIds(root)).sort();
   const served = ids.slice(0, limit);
-  const candidates = await readCandidatesByIds(root, served);
-  const unreadableInSlice = served.length - candidates.length;
-  return { candidates, total: ids.length - unreadableInSlice };
+  const entries = [];
+  for (const fileId of served) {
+    const candidate = await readCandidate(root, fileId);
+    if (candidate) entries.push({ fileId, candidate });
+  }
+  const unreadableInSlice = served.length - entries.length;
+  return { entries, total: ids.length - unreadableInSlice };
 }
 
 /**
