@@ -381,7 +381,10 @@ volta run --node 24 npx mint dev --port 3001
 
 ## Current release
 
-**Release candidate `1.4.0-rc.2`:**
+**Release candidate `1.4.0-rc.3`:**
+
+- Keep personal Claude coding instructions out of generated pages and answers.
+- Clarify wiki-link alias targets; prompt version `v6` can regenerate older pages.
 
 - Review answers before publication with `query --save --review`, and approve
   candidate batches with one finalization.
@@ -398,11 +401,11 @@ volta run --node 24 npx mint dev --port 3001
   source-review cockpit, explicitly enabled through the SDK on loopback.
 
 This is a prerelease candidate for `1.4.0`; the stable npm release remains
-`1.3.0`. Registry publication uses the `next` dist-tag, leaving `latest` unchanged.
+`1.3.0`. Compiler publication uses the `next` dist-tag, leaving its `latest` unchanged.
 For registry testing after publication:
 
 ```bash
-npm install --global llm-wiki-compiler@1.4.0-rc.2
+npm install --global llm-wiki-compiler@1.4.0-rc.3
 ```
 
 Existing CLI and standard `createWiki` entry points remain available. Experimental

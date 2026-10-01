@@ -67,6 +67,12 @@ llmwiki compile
 
 The `claude-agent` provider routes calls through the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript) instead of the raw Messages API. It authenticates using your **local Claude Code login** (OAuth/subscription) - no `ANTHROPIC_API_KEY` is required. If you can run `claude` in your terminal, this provider works.
 
+Generation and extraction run with filesystem settings disabled. Personal and
+project `CLAUDE.md` instructions, hooks, and filesystem settings are not loaded
+into these requests. Your existing login remains available. Set provider options
+through llmwiki environment variables; use `compile --instructions <path>` for
+explicit project writing guidance.
+
 **Setup**
 
 ```bash

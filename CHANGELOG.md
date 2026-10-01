@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0-rc.3] - 2026-09-30
+
+This candidate corrects the Claude-login issues found during RC2 acceptance.
+The standard compiler remains on npm `next`; its stable `latest` stays `1.3.0`.
+
+### Fixed
+
+- Isolate Claude Agent SDK generation and extraction from personal/project
+  instructions and filesystem settings, preventing coding-session status markers
+  from leaking into wiki pages and answers while retaining existing login access.
+- Clarify the target-first order of wiki-link aliases in page-generation prompts;
+  approval continues to refuse links to missing targets.
+- Advance prompt provenance to `v6`; the next compile can regenerate pages
+  produced with older prompt versions.
+
 ## [1.4.0-rc.2] - 2026-09-30
 
 The `rc.1` distribution was not completed: only its core package was published,
