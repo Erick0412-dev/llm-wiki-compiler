@@ -3,9 +3,18 @@ title: "SDK upgrade notes"
 description: "Compatibility boundaries when adopting the split-package release candidate."
 ---
 
-These notes cover the `1.4.0-rc.2` release candidate relative to `1.3.0`.
+These notes cover the `1.4.0-rc.3` release candidate relative to `1.3.0`.
 The candidate uses the npm `next` dist-tag; the stable `latest` tag remains
 at `1.3.0`. Use the exact candidate version when testing an upgrade.
+
+## RC3 provider correction
+
+The Claude Agent SDK provider now isolates generation and extraction from
+personal/project filesystem settings and `CLAUDE.md` instructions. Existing
+Claude login remains available. Use llmwiki environment variables for provider
+configuration and `compile --instructions <path>` for explicit writing guidance.
+Prompt provenance advances to `v6`, so the next compile can regenerate pages
+created under earlier prompt versions.
 
 ## What stays the same
 

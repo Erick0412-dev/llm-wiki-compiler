@@ -41,6 +41,7 @@ describe("ClaudeAgentProvider generation", () => {
     query.mockReturnValue(messageStream([assistantText("Hello "), assistantText("world")]));
     const result = await new ClaudeAgentProvider("m").complete("sys", [{ role: "user", content: "hi" }], 100);
     expect(result).toBe("Hello world");
+    expect(query.mock.calls[0][0].options.settingSources).toEqual([]);
   });
 
   it("prefers the final result text over intermediate assistant turns", async () => {
@@ -65,6 +66,7 @@ describe("ClaudeAgentProvider generation", () => {
     );
     expect(chunks).toEqual(["a", "b"]);
     expect(result).toBe("ab");
+    expect(query.mock.calls[0][0].options.settingSources).toEqual([]);
   });
 
   it("captures tool_use input as JSON for toolCall()", async () => {
@@ -77,6 +79,7 @@ describe("ClaudeAgentProvider generation", () => {
     const tools = [{ name: "extract_concepts", description: "d", input_schema: { type: "object", properties: {} } }];
     const result = await new ClaudeAgentProvider("m").toolCall("sys", [{ role: "user", content: "hi" }], tools, 100);
     expect(JSON.parse(result)).toEqual(input);
+    expect(query.mock.calls[0][0].options.settingSources).toEqual([]);
   });
 });
 

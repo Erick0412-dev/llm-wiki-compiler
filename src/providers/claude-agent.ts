@@ -150,6 +150,8 @@ export class ClaudeAgentProvider extends VoyageEmbeddingProvider implements LLMP
       prompt,
       options: {
         systemPrompt: `${system}\n\n${OUTPUT_ONLY_DIRECTIVE}`,
+        // Personal/project Claude instructions must not become generated wiki content.
+        settingSources: [],
         model: this.model,
         maxTurns: MAX_TURNS,
         tools: [],
@@ -195,6 +197,8 @@ export class ClaudeAgentProvider extends VoyageEmbeddingProvider implements LLMP
       prompt: buildPrompt(messages),
       options: {
         systemPrompt: `${system}\n\nRespond by calling the \`${requested.name}\` tool.`,
+        // Extraction must use the same isolated instruction boundary as text generation.
+        settingSources: [],
         model: this.model,
         maxTurns: MAX_TURNS,
         mcpServers: { [TOOL_SERVER_NAME]: mcpServer },
