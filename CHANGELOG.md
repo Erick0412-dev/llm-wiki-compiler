@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-01
+
+Promote the RC3 runtime to stable with matching compiler, core, and local
+workflow packages. Existing users continue installing `llm-wiki-compiler`.
+
+### Highlights
+
+- Review generated answers and approve candidate batches before publication.
+- Reuse source extraction and prompt prefixes, with grounded query reporting
+  and embedding fallback enabled by default.
+- Isolate Claude generation from personal/project coding instructions; existing
+  Claude login remains usable. Clarify target-first wiki-link aliases.
+- Ship the optional read-only source-review cockpit and split SDK packages.
+
+### Upgrade notes
+
+- Experimental artifact/workflow types can require consumer changes; read the
+  [SDK upgrade notes](docs/guides/sdk-upgrade.mdx).
+- Newly generated concept pages record prompt version `v6`. Upgrading alone
+  does not regenerate unchanged sources. Review source-triggered updates with
+  `compile --review` before approval.
+- Query answers use wiki-page citations. The existing source-line citation
+  lint rule can warn about these answers even when their page links resolve.
+- Native Windows remains outside the live acceptance coverage.
+
 ## [1.4.0-rc.3] - 2026-09-30
 
 This candidate corrects the Claude-login issues found during RC2 acceptance.
@@ -19,8 +44,8 @@ The standard compiler remains on npm `next`; its stable `latest` stays `1.3.0`.
   from leaking into wiki pages and answers while retaining existing login access.
 - Clarify the target-first order of wiki-link aliases in page-generation prompts;
   approval continues to refuse links to missing targets.
-- Advance prompt provenance to `v6`; the next compile can regenerate pages
-  produced with older prompt versions.
+- Advance prompt provenance to `v6` for newly generated pages. Upgrading alone
+  does not recompile unchanged sources.
 
 ## [1.4.0-rc.2] - 2026-09-30
 
@@ -47,7 +72,8 @@ resolve at `1.4.0-rc.2` with the same verified source commit.
 - New query defaults return embedding warnings and omit pages whose contents
   could not reach the answer model. Set `embeddingFailure: "throw"` to keep
   strict embedding failures.
-- Prompt version `v5` can regenerate pages on the next compile. Embedding
+- Newly generated pages record prompt version `v5`; upgrading alone does not
+  recompile unchanged sources. Embedding
   recovery may requeue older quarantined work; consult the configuration guide
   before upgrading a large wiki.
 - The source-review cockpit is off by default, read-only, and loopback-only.
