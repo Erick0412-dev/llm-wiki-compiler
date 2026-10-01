@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.4.0-rc.1] - 2026-09-30
+## [1.4.0-rc.2] - 2026-09-30
+
+The `rc.1` distribution was not completed: only its core package was published,
+and npm omitted its source-commit metadata from the linked-worktree bootstrap.
+This candidate supersedes that incomplete attempt; all three packages must
+resolve at `1.4.0-rc.2` with the same verified source commit.
 
 ### Highlights
 
@@ -802,8 +807,8 @@ Initial release.
 - Atomic writes, lock-protected compilation, orphan marking for deleted sources.
 - `[[wikilink]]` resolution and auto-generated `wiki/index.md`.
 
-[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0-rc.1...HEAD
-[1.4.0-rc.1]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0-rc.1
+[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0-rc.2...HEAD
+[1.4.0-rc.2]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0-rc.2
 [1.3.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.0.0...v1.1.0

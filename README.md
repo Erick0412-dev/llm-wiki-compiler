@@ -381,7 +381,7 @@ volta run --node 24 npx mint dev --port 3001
 
 ## Current release
 
-**Release candidate `1.4.0-rc.1`:**
+**Release candidate `1.4.0-rc.2`:**
 
 - Review answers before publication with `query --save --review`, and approve
   candidate batches with one finalization.
@@ -402,7 +402,7 @@ This is a prerelease candidate for `1.4.0`; the stable npm release remains
 For registry testing after publication:
 
 ```bash
-npm install --global llm-wiki-compiler@1.4.0-rc.1
+npm install --global llm-wiki-compiler@1.4.0-rc.2
 ```
 
 Existing CLI and standard `createWiki` entry points remain available. Experimental
