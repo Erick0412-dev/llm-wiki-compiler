@@ -5,13 +5,11 @@
 [![docs](https://img.shields.io/badge/docs-llmwiki.atomicstrata.ai-blue)](https://llmwiki.atomicstrata.ai)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-## New in 1.4.0 — Review before publishing. Reuse what you know.
+## New in 1.4.0 — Review answers before publishing.
 
-- **Review answers before they become wiki pages.** Stage answers with `query --save --review`, check their citations, and approve them when ready. Approve batches of generated pages in one operation.
-- **Do less repeat work.** Reuse extraction for unchanged sources and share prompt prefixes across compile and query requests.
-- **See what grounded an answer.** Query results report the pages actually supplied to the model. If embeddings fail, page selection can continue with a visible warning.
-- **Keep Claude coding instructions out of your wiki.** Use your existing Claude login without pulling personal or project `CLAUDE.md` instructions into generated pages and answers.
-- **Inspect source changes alongside generated pages.** An experimental, read-only source-review cockpit compares source excerpts, saved pages, and pending proposals when explicitly enabled through the SDK.
+- **Choose what becomes part of your wiki.** Review generated answers and check their citations before saving them as published pages.
+- **Approve pages together.** Review a batch of generated pages and publish the ones you choose in one operation.
+- **See the pages behind an answer.** Follow citations back to your wiki and see which pages were used to answer your question.
 
 [Release notes](https://github.com/atomicstrata/llm-wiki-compiler/releases/tag/v1.4.0) · [Upgrade guide](docs/guides/sdk-upgrade.mdx) · [Install llmwiki](#quick-start)
 
