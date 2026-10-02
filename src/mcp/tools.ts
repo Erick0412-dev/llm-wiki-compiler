@@ -46,7 +46,8 @@ function registerIngestTool(server: McpServer, root: string): void {
     {
       title: "Ingest Source",
       description:
-        "Fetch a URL or copy a local file into sources/. Returns the saved filename, " +
+        "Add a user-requested document to this knowledge base: fetch a trusted URL or copy " +
+        "a trusted local file into sources/. Writes project files. Returns the saved filename, " +
         "character count, and whether content was truncated to fit the size limit.",
       inputSchema: {
         source: z
@@ -67,7 +68,8 @@ function registerCompileTool(server: McpServer, root: string): void {
     {
       title: "Compile Wiki",
       description:
-        "Run the incremental compile pipeline: extract concepts from new/changed " +
+        "Update the persistent knowledge wiki after source documents change. Writes wiki " +
+        "pages or review candidates according to project policy. Extract concepts from new/changed " +
         "sources, generate wiki pages, resolve interlinks, and rebuild the index. " +
         "Requires an LLM provider with credentials.",
       inputSchema: {},
@@ -86,7 +88,8 @@ function registerQueryTool(server: McpServer, root: string): void {
     {
       title: "Query Wiki",
       description:
-        "Ask a natural-language question. Selects relevant pages with the LLM, " +
+        "Get a model-generated answer grounded in this knowledge base. For source evidence " +
+        "to reason over yourself, use get_context_pack instead. Selects relevant pages, " +
         "loads them, and returns a grounded answer with citations. Set save=true " +
         "to request publication as a wiki page; citation or profile refusals " +
         "return the answer with publicationRefusal and no saved slug. Set debug=true to include the " +
@@ -139,7 +142,7 @@ function registerReadTool(server: McpServer, root: string): void {
   server.registerTool(
     "read_page",
     {
-      title: "Read Page",
+      title: "Read Wiki Page",
       description:
         "Read a single wiki page by slug. Searches concepts/ first, then queries/. " +
         "Returns the parsed frontmatter and body. No LLM call required.",
@@ -178,9 +181,10 @@ function registerStatusTool(server: McpServer, root: string): void {
   server.registerTool(
     "wiki_status",
     {
-      title: "Wiki Status",
+      title: "Inspect Knowledge Base",
       description:
-        "Summarize the wiki: page count, source count, last compile time, pending source " +
+        "Start here to inspect this knowledge base before retrieval or updating it. " +
+        "No provider credentials required. Summarize page count, source count, last compile time, pending source " +
         "changes, and freshness-derived page health. stalePages lists concept slugs whose " +
         "source changed or partially disappeared since last compile. orphanedPages lists " +
         "concept slugs whose every owning source was deleted OR that are frontmatter-flagged " +
@@ -235,9 +239,11 @@ function contextPackToolConfig(): {
   inputSchema: ReturnType<typeof contextPackInputSchema>;
 } {
   return {
-    title: "Get Context Pack",
+    title: "Get Evidence Context",
     description:
-      "Build an agent-ready evidence pack for `prompt` over the compiled " +
+      "Retrieve bounded evidence from this project knowledge base for research, document " +
+      "questions, or agent task context. Use it when you will reason over the evidence yourself. " +
+      "Build a token-budgeted pack for `prompt` over the compiled " +
       "wiki: primary pages, semantic chunks, graph neighbors, citations, " +
       "warnings, and suggested next actions. Returns the same v1 JSON " +
       "envelope as `llmwiki context --json`. Read-only; no provider " +

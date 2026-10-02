@@ -1,7 +1,8 @@
 {
   "name": "llm-wiki-compiler",
   "version": "1.4.1",
-  "description": "A knowledge compiler CLI — raw sources in, interlinked wiki out",
+  "description": "Compile documents into a persistent, cited knowledge wiki for AI agents. CLI, MCP server, and TypeScript SDK.",
+  "mcpName": "io.github.atomicstrata/llmwiki",
   "type": "module",
   "workspaces": ["packages/llmwiki-core", "packages/llmwiki-local-workflows"],
   "main": "./dist/index.js",
@@ -22,6 +23,7 @@
     "benchmark:review": "node scripts/benchmark-review-batch.mjs",
     "dev:view": "node scripts/dev-viewer.mjs",
     "vendor:fonts": "node scripts/vendor-fonts.mjs",
+    "mcp:manifest": "node scripts/mcp-manifest.mjs",
     "release:check-docs": "node scripts/check-release-docs.mjs",
     "release:check-docs:current": "node scripts/check-release-docs.mjs --current-version",
     "test": "vitest run",
@@ -34,6 +36,12 @@
     "test:pack": "vitest run --config /dev/null test/sdk/packaging.test.ts"
   },
   "keywords": [
+    "mcp",
+    "mcp-server",
+    "ai-agents",
+    "knowledge-base",
+    "retrieval",
+    "agent-skills",
     "knowledge",
     "wiki",
     "llm",
@@ -53,6 +61,7 @@
   },
   "files": [
     "dist/",
+    "skills/llmwiki/",
     "ARCHITECTURE.md",
     "CHANGELOG.md",
     "LICENSE",

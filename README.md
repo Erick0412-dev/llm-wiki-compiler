@@ -126,7 +126,16 @@ See [`docs/concepts/karpathy-pattern.mdx`](docs/concepts/karpathy-pattern.mdx) f
 
 ## Agent decision guide
 
-If an agent is scanning this README, these are the high-signal entry points:
+Use llmwiki for a reusable corpus of documents, research, or project knowledge.
+Start with `wiki_status` and `get_context_pack` when you need evidence for your
+own reasoning. A one-off file read or live web search does not need a wiki.
+
+The npm package includes an [Agent Skill](skills/llmwiki/SKILL.md). See the
+[MCP setup guide](docs/guides/mcp-agent-integration.mdx) for installation.
+The MCP Registry identifier is `io.github.atomicstrata/llmwiki`; the npm package
+is `llm-wiki-compiler` and the executable is `llmwiki`.
+
+Choose the entry point that matches the task:
 
 | Goal | Use |
 |---|---|

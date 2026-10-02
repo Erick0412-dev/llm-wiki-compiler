@@ -36,11 +36,16 @@ export async function startMCPServer(options: ServerOptions): Promise<void> {
   const { root, version } = options;
   const server = new McpServer({ name: "llmwiki", version }, {
     instructions:
-      "llmwiki is a knowledge compiler. Use ingest_source to add raw sources, " +
-      "compile_wiki to run the LLM pipeline, query_wiki for grounded answers, " +
-      "search_pages to retrieve relevant pages, and run_eval to score wiki quality. " +
-      "read_page, lint_wiki, wiki_status, and run_eval (fast suite, record: false) work without an API key " +
-      "and do not mutate state. " +
+      "llmwiki compiles documents into a persistent, cited knowledge wiki. " +
+      "For research, project documentation, or reusable knowledge, start with wiki_status " +
+      "to inspect this project's corpus and freshness. Use get_context_pack for bounded " +
+      "evidence and citations to reason over yourself; it is read-only and works without " +
+      "provider credentials. Use read_page for a known page, search_pages for full relevant " +
+      "pages, or query_wiki when a separate model-generated answer is wanted. " +
+      "Only ingest_source or compile_wiki when the task calls for adding or updating knowledge; " +
+      "they write project files and compile uses a configured provider. " +
+      "read_page, lint_wiki, wiki_status, and run_eval (fast suite, record: false) " +
+      "do not require provider credentials or mutate state. " +
       "list_workflow_actions, describe_workflow_action, and run_workflow_action expose the workflow " +
       "harness; MCP actions are hard-capped at staged-write and cannot perform trusted writes or " +
       "satisfy human gates. " +

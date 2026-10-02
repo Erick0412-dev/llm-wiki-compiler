@@ -4,12 +4,13 @@ sidebarTitle: "MCP Integration"
 description: "Set up the llmwiki MCP server to let Claude Desktop, Cursor, Claude Code, and other MCP agents ingest, compile, and query your wiki directly."
 ---
 
-The llmwiki MCP server turns any MCP-compatible agent into a first-class wiki collaborator. Instead of scripting CLI calls and parsing stdout, agents can call structured tools - `compile_wiki`, `query_wiki`, `get_context_pack`, and more - and receive typed JSON results they can reason over. Read-only tools work without credentials, so an agent can browse, lint, and inspect your wiki before ever touching the LLM pipeline.
+The llmwiki MCP server turns any MCP-compatible agent into a first-class wiki collaborator. Instead of scripting CLI calls and parsing stdout, agents can call structured tools - `compile_wiki`, `query_wiki`, `get_context_pack`, and more - and receive typed JSON results they can reason over. Start with `wiki_status`, then `get_context_pack` to retrieve evidence for your own reasoning without provider credentials. Use generation or write tools only when the task needs them.
 
 This guide walks you through starting the server, wiring it into Claude Desktop and Cursor, and understanding exactly what your agents can do once connected.
 
 ## Prerequisites
 
+- Node.js 24 or later on the MCP client's `PATH`
 - llmwiki installed globally: `npm install -g llm-wiki-compiler`
 - A wiki project directory (or an empty directory where one will be created)
 - An LLM provider configured for tools that need one (see the provider configuration docs for `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.)
@@ -35,7 +36,7 @@ This guide walks you through starting the server, wiring it into Claude Desktop 
       "mcpServers": {
         "llmwiki": {
           "command": "npx",
-          "args": ["llm-wiki-compiler", "serve", "--root", "/path/to/wiki-project"],
+          "args": ["-y", "llm-wiki-compiler", "serve", "--root", "/path/to/wiki-project"],
           "env": {
             "ANTHROPIC_API_KEY": "sk-ant-..."
           }
@@ -55,7 +56,7 @@ This guide walks you through starting the server, wiring it into Claude Desktop 
       "mcpServers": {
         "llmwiki": {
           "command": "npx",
-          "args": ["llm-wiki-compiler", "serve", "--root", "/path/to/wiki-project"],
+          "args": ["-y", "llm-wiki-compiler", "serve", "--root", "/path/to/wiki-project"],
           "env": {
             "ANTHROPIC_API_KEY": "sk-ant-..."
           }
@@ -92,7 +93,7 @@ This guide walks you through starting the server, wiring it into Claude Desktop 
 
 ### Tools
 
-The server exposes eleven tools. Read-only tools work without provider credentials; tools that invoke the LLM pipeline require a configured provider in the `env` block.
+The server exposes the tools below. Provider requirements are separate from write permissions: ingestion and OKF exchange can write files without an LLM provider.
 
 | Tool | What it does | Credentials required |
 |------|--------------|:--------------------:|
@@ -107,6 +108,12 @@ The server exposes eleven tools. Read-only tools work without provider credentia
 | `run_eval` | Score wiki quality - fast suite is credential-free; full suite LLM-judges citation samples | Fast: No / Full: Yes |
 | `export_okf` | Export the wiki as an Open Knowledge Format bundle under a project-confined output path | No |
 | `import_okf` | Preview or stage an Open Knowledge Format bundle from a project-confined path as review candidates | No |
+
+| `verify_artifact` | Verify a hash-pinned artifact reference and return metadata, without its body | No |
+| `list_workflow_actions` | List available workflow actions | No |
+| `describe_workflow_action` | Inspect an action and its input contract | No |
+| `run_workflow_action` | Run a declared action, capped at staged writes; cannot approve human gates | Depends on action |
+| `workflow_run_status` | Inspect a workflow run | No |
 
 **`get_context_pack` vs `query_wiki`:** these tools serve different purposes. `get_context_pack` *packages evidence* - it assembles a structured JSON envelope of relevant pages, semantic chunks, and citations that the agent uses for its own reasoning. `query_wiki` *generates an answer* - it calls the LLM and returns prose. Use `get_context_pack` when the agent needs grounded source material to reason over; use `query_wiki` when you want a finished answer.
 
@@ -132,7 +139,7 @@ Resources are passive read views of the wiki that agents can attach as context w
 
 The server starts without credentials. Provider credentials are read from the `env` block in your MCP config and forwarded to each pipeline call:
 
-- **Read-only and filesystem-only tools** (`read_page`, `lint_wiki`, `wiki_status`, `ingest_source`, `export_okf`, `import_okf`) - always work, no credentials needed.
+- **Read-only and filesystem-only tools** (`read_page`, `lint_wiki`, `wiki_status`, `ingest_source`, `export_okf`, `import_okf`) - do not need provider credentials; normal path, project, and policy checks still apply.
 - **LLM-dependent tools** (`compile_wiki`, `query_wiki`, `search_pages`) - require a valid provider credential (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) in the environment at call time.
 - **`get_context_pack`** - credential-free by default. When embeddings are available and provider credentials are present, semantic retrieval is used. Without credentials or an embedding store, the tool falls back to lexical ranking and surfaces an `embedding-store-missing` or `query-embedding-unavailable` warning in the response - it does not fail.
 - **`run_eval`** - the `fast` suite (health score, citation coverage, corpus stats) runs without any credentials. The `full` suite adds LLM-judged citation scoring and requires a provider.
@@ -165,6 +172,17 @@ The server starts without credentials. Provider credentials are read from the `e
 <Tip>
   After an agent calls `compile_wiki`, check `wiki_status` and look at the `pendingCandidates` field. If your wiki has a review policy configured in `.llmwiki/config.json`, some pages may be held for human review rather than written directly. A non-zero `pendingCandidates` means the agent has queued work that needs your approval before those pages go live - run `llmwiki review list` to inspect them.
 </Tip>
+
+## Agent skill
+
+The npm package ships an [Agent Skills](https://agentskills.io/specification) skill at `skills/llmwiki/SKILL.md`. It tells a skill-aware agent when a persistent wiki is worth building, and routes a connected agent to `wiki_status` and `get_context_pack` before any tool that writes or needs a provider. Copy or symlink the installed directory into your agent's skills directory; for Claude Code that is `~/.claude/skills/`:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s "$(npm root -g)/llm-wiki-compiler/skills/llmwiki" ~/.claude/skills/llmwiki
+```
+
+The skill never changes agent configuration on its own and does not grant publication approval; review candidates still go through `llmwiki review`.
 
 ## Next steps
 

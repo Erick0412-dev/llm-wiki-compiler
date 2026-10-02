@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.1] - 2026-10-01
 
+### Agent discovery
+
+- Make llmwiki easier to find through searchable npm metadata and a versioned
+  MCP Registry manifest.
+- Bundle an Agent Skill that guides agents to inspect the wiki and retrieve
+  cited context before generating answers or updating knowledge.
+- Improve MCP tool descriptions and setup documentation. Existing tool names,
+  inputs, and execution behavior are unchanged.
+
 ### Documentation
 
 - Highlight the main 1.4.0 benefits at the top of the README and place the
@@ -16,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consolidate the 1.4.0 changelog, retain contributor credits, and refresh the
   architecture guide against the released implementation.
 - Republish the matching package set so npm displays the updated README.
-  Runtime behavior is unchanged from 1.4.0.
 
 ## [1.4.0] - 2026-10-01
 
