@@ -161,7 +161,11 @@ describe("executable ephemeral read", () => {
   it("discards the abandoned leg's custody BEFORE returning at the time bound", async () => {
     const plan = ephemeralProviderPlan((phase) => { (phase.bounds as Record<string, number>).maximumTimeMsPerInstance = 25; });
     const invoke: ProviderInvokeFn = async (request, host) => {
-      await new Promise<void>((resolve) => request.hostSignal?.addEventListener("abort", () => resolve(), { once: true }));
+      // Custody setup can outlast the 25ms bound before this mock is invoked.
+      // An abort event is not replayed for a listener added after cancellation.
+      if (!request.hostSignal?.aborted) {
+        await new Promise<void>((resolve) => request.hostSignal?.addEventListener("abort", () => resolve(), { once: true }));
+      }
       return answered()(request, host);
     };
     const run = await withEphemeralSandbox(() => runFixtureRead(ephemeralRequest({ plan }), invoke));

@@ -7,10 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-01
+
+### Agent discovery
+
+- Make llmwiki easier to find through searchable npm metadata and a versioned
+  MCP Registry manifest.
+- Bundle an Agent Skill that guides agents to inspect the wiki and retrieve
+  cited context before generating answers or updating knowledge.
+- Improve MCP tool descriptions and setup documentation. Existing tool names,
+  inputs, and execution behavior are unchanged.
+
+### Documentation
+
+- Highlight the main 1.4.0 benefits at the top of the README and place the
+  Configurable Lifecycle Profiles introduction in release order.
+- Consolidate the 1.4.0 changelog, retain contributor credits, and refresh the
+  architecture guide against the released implementation.
+- Republish the matching package set so npm displays the updated README.
+
 ## [1.4.0] - 2026-10-01
 
-Promote the RC3 runtime to stable with matching compiler, core, and local
-workflow packages. Existing users continue installing `llm-wiki-compiler`.
+Review answers before publishing, reduce repeated compilation work, and trace
+answers back to the pages that informed them. Continue installing
+`llm-wiki-compiler`; its supporting packages use matching versions.
 
 ### Highlights
 
@@ -21,6 +41,20 @@ workflow packages. Existing users continue installing `llm-wiki-compiler`.
   Claude login remains usable. Clarify target-first wiki-link aliases.
 - Ship the optional read-only source-review cockpit and split SDK packages.
 
+### Contributors
+
+- [@LorenzoGentile](https://github.com/LorenzoGentile): batch review approval
+  ([#231](https://github.com/atomicstrata/llm-wiki-compiler/pull/231)) and embedding
+  refresh opt-out ([#206](https://github.com/atomicstrata/llm-wiki-compiler/pull/206)).
+- [@chenleji](https://github.com/chenleji): non-ASCII MCP resource reads
+  ([#230](https://github.com/atomicstrata/llm-wiki-compiler/pull/230), completed in
+  [#246](https://github.com/atomicstrata/llm-wiki-compiler/pull/246)) and indexed
+  wikilink/freshness lookups
+  ([#229](https://github.com/atomicstrata/llm-wiki-compiler/pull/229), completed in
+  [#247](https://github.com/atomicstrata/llm-wiki-compiler/pull/247)).
+
+Credit includes original implementations completed or extended during maintainer review.
+
 ### Upgrade notes
 
 - Experimental artifact/workflow types can require consumer changes; read the
@@ -30,55 +64,11 @@ workflow packages. Existing users continue installing `llm-wiki-compiler`.
   `compile --review` before approval.
 - Query answers use wiki-page citations. The existing source-line citation
   lint rule can warn about these answers even when their page links resolve.
-- Native Windows remains outside the live acceptance coverage.
-
-## [1.4.0-rc.3] - 2026-09-30
-
-This candidate corrects the Claude-login issues found during RC2 acceptance.
-The standard compiler remains on npm `next`; its stable `latest` stays `1.3.0`.
-
-### Fixed
-
-- Isolate Claude Agent SDK generation and extraction from personal/project
-  instructions and filesystem settings, preventing coding-session status markers
-  from leaking into wiki pages and answers while retaining existing login access.
-- Clarify the target-first order of wiki-link aliases in page-generation prompts;
-  approval continues to refuse links to missing targets.
-- Advance prompt provenance to `v6` for newly generated pages. Upgrading alone
-  does not recompile unchanged sources.
-
-## [1.4.0-rc.2] - 2026-09-30
-
-The `rc.1` distribution was not completed: only its core package was published,
-and npm omitted its source-commit metadata from the linked-worktree bootstrap.
-This candidate supersedes that incomplete attempt; all three packages must
-resolve at `1.4.0-rc.2` with the same verified source commit.
-
-### Highlights
-
-- Review generated answers before publication and approve candidate batches with
-  shared finalization and durable embedding recovery.
-- Reuse source extraction, share prompt prefixes, and report grounded query
-  pages with embedding fallback enabled by default.
-- Ship the compiler, engine-free core and local workflow engine as one matching
-  distribution. Existing users continue installing `llm-wiki-compiler`.
-- Preview source changes in an optional read-only viewer cockpit.
-
-### Upgrade notes and limits
-
-- This prerelease uses the npm `next` dist-tag; `latest` remains at `1.3.0`.
-- Experimental artifact and workflow types can require consumer updates. See the
-  [SDK upgrade notes](docs/guides/sdk-upgrade.mdx).
-- New query defaults return embedding warnings and omit pages whose contents
-  could not reach the answer model. Set `embeddingFailure: "throw"` to keep
-  strict embedding failures.
-- Newly generated pages record prompt version `v5`; upgrading alone does not
-  recompile unchanged sources. Embedding
-  recovery may requeue older quarantined work; consult the configuration guide
-  before upgrading a large wiki.
+- Embedding failures return warnings by default; use `embeddingFailure: "throw"`
+  for strict failures. Recovery may requeue older quarantined work; consult the
+  embedding configuration guide before upgrading a large wiki.
 - The source-review cockpit is off by default, read-only, and loopback-only.
-  Native Windows validation and the live-provider follow-ups recorded for
-  `1.3.0` remain outstanding.
+  Native Windows remains outside the live acceptance coverage.
 
 ### Added
 
@@ -112,7 +102,7 @@ resolve at `1.4.0-rc.2` with the same verified source commit.
   [SDK upgrade notes](docs/guides/sdk-upgrade.mdx) for experimental source changes.
   Registry publication requires dependency-first release of all three packages;
   the release workflow now publishes core, engine and facade in that order from
-  one commit, and prerelease versions publish to a non-`latest` dist-tag.
+  one commit.
 
 - Generic domain SDK record
   preparation/observation/retirement, operation-bundle authority and recovery,
@@ -170,6 +160,11 @@ resolve at `1.4.0-rc.2` with the same verified source commit.
 
 ### Changed
 
+- Indexed wikilink and freshness lookups avoid scanning every page for each link,
+  improving context generation on larger wikis. Contributed by @chenleji in
+  [#229](https://github.com/atomicstrata/llm-wiki-compiler/pull/229), completed in
+  [#247](https://github.com/atomicstrata/llm-wiki-compiler/pull/247).
+
 - **Queries report only the pages the model saw, and fall back when embedding fails.** These were opt-in before and are now the default for `llmwiki query`, the SDK `query` and `search`, and the MCP `query_wiki` and `search_pages` tools.
   - `pageIds`, `refs`, `selectedPages` and the activity log name only pages whose content reached the answer model. A selected page that can't be read is left out and reported in a `page-hydration-dropped` warning. Excerpts from pages outside that set are no longer sent to the model.
   - When the embedding call fails, for example with a provider that cannot embed, pages are selected without embeddings and an `embedding-degraded` warning is returned instead of an error. Pass `embeddingFailure: "throw"` for the old strict behavior.
@@ -187,11 +182,11 @@ resolve at `1.4.0-rc.2` with the same verified source commit.
 
 - **Faster CLI start-up.** Web ingestion now loads jsdom, Readability and Turndown only when a URL is ingested, instead of on every command. Measured on a local build: `llmwiki --version` 340 ms to 228 ms and `llmwiki status` 707 ms to 601 ms (medians of 10 runs).
 
-- **Concept-page prompts list the pages a page may link to.** Pages are generated in parallel and written together at the end, so a page never saw the titles of the pages written alongside it and guessed link targets that then failed to resolve. Every concept-page prompt in a compile now lists this compile's concepts and the existing pages (the same list for every page, one entry per page, rendered lines capped at 8,000 characters), and asks the model to link only to those. A page whose file name differs from its title is offered as an explicit `[[slug|Title]]` link so the entry always resolves. Titles are treated as data: each is reduced to one plain line, and titles containing link syntax are left out. In a live docs compile (two runs each), broken wikilinks fell from 196 and 199 to 13 and 24; most of the remainder are `[[wikilinks]]` syntax examples copied from the source docs. Page prompts are about 22% longer, estimated cost rose about 6%, and the share of cited paragraphs fell about 2.5 points (mostly one-line list lead-ins). `PROMPT_VERSION` advances to `v5`.
+- **Concept-page prompts list the pages a page may link to.** Pages are generated in parallel and written together at the end, so a page never saw the titles of the pages written alongside it and guessed link targets that then failed to resolve. Every concept-page prompt in a compile now lists this compile's concepts and the existing pages (the same list for every page, one entry per page, rendered lines capped at 8,000 characters), and asks the model to link only to those. A page whose file name differs from its title is offered as an explicit `[[slug|Title]]` link so the entry always resolves. Titles are treated as data: each is reduced to one plain line, and titles containing link syntax are left out. In a live docs compile (two runs each), broken wikilinks fell from 196 and 199 to 13 and 24; most of the remainder are `[[wikilinks]]` syntax examples copied from the source docs. Page prompts are about 22% longer, estimated cost rose about 6%, and the share of cited paragraphs fell about 2.5 points (mostly one-line list lead-ins).
 
 - **Query page selection sends the wiki index before the question.** Without embeddings, every query on a wiki selects pages over the same index, which previously came after the question, so no two queries shared a prompt prefix. With the index first, backends that reuse a common prefix can skip it on later queries; the prompt size is unchanged. Replaying 5 queries on an 11-document docs wiki offline, the shared-prefix share of selection prompts rose from 0.4% to 80% (the most possible, since the first query has nothing earlier to share).
 
-- **Page prompts put shared content first.** The page-generation prompt now orders its parts from most to least shared: fixed instructions, then the source material (now closed by an end marker), then the existing page, related pages and the concept name. Pages drawn from the same sources now share an identical prompt prefix, which backends that reuse a common prefix can skip re-reading; for backends that do not, the prompt stays essentially the same size. Replaying an 11-document docs corpus offline, the share of page-prompt text that is a prefix already sent in an earlier page prompt rose from 0.5% to 88%. `PROMPT_VERSION` advances to `v4`, which also resets the unreleased extraction-reuse metadata once: the next compile that adds or changes a source re-extracts that source's co-owners.
+- **Page prompts put shared content first.** The page-generation prompt now orders its parts from most to least shared: fixed instructions, then the source material (now closed by an end marker), then the existing page, related pages and the concept name. Pages drawn from the same sources now share an identical prompt prefix, which backends that reuse a common prefix can skip re-reading; for backends that do not, the prompt stays essentially the same size. Replaying an 11-document docs corpus offline, the share of page-prompt text that is a prefix already sent in an earlier page prompt rose from 0.5% to 88%. Extraction snapshots with an incompatible prompt version are refreshed when their sources next participate in compilation.
 
 - Incremental compile reuses committed extraction metadata for unchanged shared
   contributors and regenerates only affected concepts, reducing repeated model
@@ -222,6 +217,16 @@ resolve at `1.4.0-rc.2` with the same verified source commit.
   without promotion admission, so malformed metadata can still be cleared.
 
 ### Fixed
+
+- Isolate Claude generation and extraction from personal/project instructions and
+  filesystem settings, preventing coding-session status markers from entering
+  wiki pages and answers while retaining existing login access.
+- Clarify target-first wiki-link aliases in page-generation prompts; approval
+  continues to refuse links to missing targets.
+- MCP resources now read non-ASCII page slugs, including Chinese titles, while
+  keeping reads confined to the wiki directory. Contributed by @chenleji in
+  [#230](https://github.com/atomicstrata/llm-wiki-compiler/pull/230), completed in
+  [#246](https://github.com/atomicstrata/llm-wiki-compiler/pull/246).
 
 - **Viewer tests no longer fail each other at random.** The viewer test harness's own tests wrote throwaway modules into `src/viewer/assets/`, and any viewer test mounting at the same moment loaded them and failed. They now pass those modules to the harness in memory, and a test checks that the shared directory is never touched.
 
@@ -848,8 +853,9 @@ Initial release.
 - Atomic writes, lock-protected compilation, orphan marking for deleted sources.
 - `[[wikilink]]` resolution and auto-generated `wiki/index.md`.
 
-[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0-rc.2...HEAD
-[1.4.0-rc.2]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0-rc.2
+[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.0.0...v1.1.0

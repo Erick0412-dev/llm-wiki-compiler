@@ -1,0 +1,87 @@
+name: Publish MCP Registry entry
+
+# Run only after npm publication. Registry ownership uses the GitHub org's OIDC
+# identity, separately from npm Trusted Publishing and the npm account scope.
+on:
+  workflow_dispatch:
+    inputs:
+      public_sha:
+        description: Exact published 40-character commit SHA
+        required: true
+        type: string
+      version:
+        description: Exact version already published to npm
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: mcp-registry-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'atomicstrata/llm-wiki-compiler'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_SHA: ${{ inputs.public_sha }}
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Validate release identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.public_sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Bind the entry to the tagged and published npm artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git rev-parse "v${RELEASE_VERSION}^{commit}")" = "$RELEASE_SHA"
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+          test "$(node -p 'require("./package.json").version')" = "$RELEASE_VERSION"
+          npm view "llm-wiki-compiler@${RELEASE_VERSION}" version gitHead mcpName --json > npm-release.json
+          jq -e --arg sha "$RELEASE_SHA" --arg version "$RELEASE_VERSION" \
+            '.version == $version and .gitHead == $sha and .mcpName == "io.github.atomicstrata/llmwiki"' npm-release.json
+          node scripts/mcp-manifest.mjs > server.json
+      - name: Install pinned MCP publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output publisher.tar.gz \
+            https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz' | sha256sum --check
+          tar xzf publisher.tar.gz mcp-publisher
+      - name: Publish with GitHub OIDC
+        run: |
+          set -euo pipefail
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+      - name: Verify exact registry entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 10); do
+            curl --fail --silent --show-error --get \
+              --data-urlencode 'search=io.github.atomicstrata/llmwiki' \
+              https://registry.modelcontextprotocol.io/v0.1/servers > registry.json
+            if jq -e --arg version "$RELEASE_VERSION" \
+              '.servers | any(.server.name == "io.github.atomicstrata/llmwiki" and .server.version == $version and (.server.packages | any(.identifier == "llm-wiki-compiler" and .version == $version)))' registry.json; then
+              echo "Verified io.github.atomicstrata/llmwiki@$RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo '::error::Exact registry entry not visible'; exit 1

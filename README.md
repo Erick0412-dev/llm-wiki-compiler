@@ -5,6 +5,14 @@
 [![docs](https://img.shields.io/badge/docs-llmwiki.atomicstrata.ai-blue)](https://llmwiki.atomicstrata.ai)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+## New in 1.4.0 — Review answers before publishing.
+
+- **Choose what becomes part of your wiki.** Review generated answers and check their citations before saving them as published pages.
+- **Approve pages together.** Review a batch of generated pages and publish the ones you choose in one operation.
+- **See the pages behind an answer.** Follow citations back to your wiki and see which pages were used to answer your question.
+
+[Release notes](https://github.com/atomicstrata/llm-wiki-compiler/releases/tag/v1.4.0) · [Upgrade guide](docs/guides/sdk-upgrade.mdx) · [Install llmwiki](#quick-start)
+
 ## New in 1.3 — A fresh look for your wiki.
 
 Meet Scientific Clay, with soft surfaces and rounded typography, and Minimal, which follows your system’s light or dark setting. Switch instantly between four themes, including Nebula Light and Dark.
@@ -21,10 +29,6 @@ The same page in a demonstration wiki. Click either screenshot for a closer look
 
 Recursive source folders, path exclusions, project-specific compile instructions, and storage for larger embedding indexes.
 
-### Configurable Lifecycle Profiles — introduced in 1.0.
-
-Build a domain-specific wiki with typed records, relationships, lifecycle gates, and workflows defined in one validated profile. Start with AutoSci or Newsroom, or create your own.
-
 ### New in 1.2 — Explore your records and their evidence.
 
 Browse profile-defined categories, declared fields, connected records, provenance, and supporting source passages in the local viewer.
@@ -32,6 +36,12 @@ Browse profile-defined categories, declared fields, connected records, provenanc
 ### New in 1.1 — Publish and share domain templates.
 
 Create signed template distributions, discover them through explicitly trusted catalogs, and install or update them with compatibility checks.
+
+### New in 1.0 — Configurable Lifecycle Profiles.
+
+**Build a knowledge system around the way you work.** Define your records, relationships, review gates, and workflows in one validated profile. Start with AutoSci for research or Newsroom for editorial work, or create your own.
+
+[Explore Configurable Lifecycle Profiles →](docs/concepts/configurable-lifecycle-profiles.mdx)
 
 ---
 
@@ -116,7 +126,16 @@ See [`docs/concepts/karpathy-pattern.mdx`](docs/concepts/karpathy-pattern.mdx) f
 
 ## Agent decision guide
 
-If an agent is scanning this README, these are the high-signal entry points:
+Use llmwiki for a reusable corpus of documents, research, or project knowledge.
+Start with `wiki_status` and `get_context_pack` when you need evidence for your
+own reasoning. A one-off file read or live web search does not need a wiki.
+
+The npm package includes an [Agent Skill](skills/llmwiki/SKILL.md). See the
+[MCP setup guide](docs/guides/mcp-agent-integration.mdx) for installation.
+The MCP Registry identifier is `io.github.atomicstrata/llmwiki`; the npm package
+is `llm-wiki-compiler` and the executable is `llmwiki`.
+
+Choose the entry point that matches the task:
 
 | Goal | Use |
 |---|---|
@@ -381,7 +400,7 @@ volta run --node 24 npx mint dev --port 3001
 
 ## Current release
 
-**Release `1.4.0`:**
+**Release `1.4.1`:** Documentation update for the `1.4.0` features below.
 
 - Keep personal Claude coding instructions out of generated pages and answers.
 - Clarify wiki-link alias targets; newly generated pages record prompt version `v6`.
@@ -400,18 +419,18 @@ volta run --node 24 npx mint dev --port 3001
 - Compare source excerpts and pending proposals in the experimental, read-only
   source-review cockpit, explicitly enabled through the SDK on loopback.
 
-The compiler and its supporting packages ship together at `1.4.0` through the
+The compiler and its supporting packages ship together at `1.4.1` through the
 npm `latest` dist-tag. Install the standard entry point:
 
 ```bash
-npm install --global llm-wiki-compiler@1.4.0
+npm install --global llm-wiki-compiler@1.4.1
 ```
 
 Existing CLI and standard `createWiki` entry points remain available. Experimental
 artifact types and workflow statuses can require source updates; read the
 [SDK upgrade notes](docs/guides/sdk-upgrade.mdx) before upgrading. Standalone
 AutoSci/Newsroom process packages are separate; their builtin ontology templates
-remain supported. See the [changelog](CHANGELOG.md) for the candidate's changes
+remain supported. See the [changelog](CHANGELOG.md) for the release's changes
 and limits.
 
 **Released `1.3.0`:**

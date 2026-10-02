@@ -6,6 +6,58 @@ an external workflow engine. The default CLI and default profile remain the
 base product, not a hidden installation of AutoSci, Newsroom, or any external
 orchestration platform.
 
+## Compiler and query flow
+
+This document describes the released `1.4.0` architecture. The CLI, MCP server,
+and standard SDK share compiler services rather than maintaining separate
+knowledge stores. Sources live under `sources/`, generated Markdown under
+`wiki/`, and compiler state, review candidates, and recovery metadata under
+`.llmwiki/`.
+
+- **Compile:** detect source changes, extract concepts, generate affected pages,
+  then publish or stage candidates according to review policy. Committed
+  extraction snapshots can be reused for unchanged shared contributors when
+  source hashes, concept ownership, provider/model, and prompt contracts match.
+  Missing or incompatible snapshots fall back to extraction. A prompt-version
+  bump alone does not mark every unchanged source for compilation.
+- **Query:** select relevant pages, load their current contents, and generate an
+  answer from those contents. Result identities report only pages actually
+  supplied to the answer model; chunk excerpts are restricted to that same set.
+  Embedding failures fall back to page selection with a warning by default;
+  callers can request strict failure with `embeddingFailure: "throw"`.
+- **Publish:** an answer citation report is advisory. Direct saves and review
+  staging validate citations again under the mutation lock. Direct saves refuse
+  pending or broken links. Reviewed answers can reference pending pages while
+  staged, but approval requires fresh validation, an unchanged answer body, and
+  the recorded target-page precondition. Citation resolution establishes link
+  validity, not factual support.
+
+The main implementations are `src/compiler/index.ts`,
+`src/compiler/extraction-snapshot.ts`, `src/commands/query.ts`,
+`src/commands/query-publication.ts`, and `src/citations/`.
+
+### Review and embedding recovery
+
+Single and batch page approvals share finalization. Batch approval records a
+persistent embedding intent before promoting pages and checks retry-queue
+capacity up front. Finalization and cleanup can be interrupted; the intent
+supports recovery and is not a claim that the entire batch is one atomic write.
+Validated-answer candidates retain their dedicated approval checks.
+
+Embedding refresh uses a persistent pending/retry queue with retry budgets tied
+to page content. A non-review compile reconciles missing or stale embeddings
+even when sources are unchanged. `LLMWIKI_EMBEDDINGS=off` skips refresh without
+reading or writing embedding and retry stores; re-enabling it allows subsequent
+reconciliation. See `src/commands/review-approve-batch.ts`,
+`src/commands/review-finalize.ts`, and `src/utils/embeddings-refresh.ts`.
+
+Chat and embedding providers can be selected independently. Claude Agent SDK
+text generation and extraction use `settingSources: []`, keeping personal and
+project coding settings out of wiki generation while allowing existing Claude
+login. This is a settings boundary, not a sandbox. Explicit writing guidance
+comes through llmwiki configuration and compile instructions. Claude embeddings
+use Voyage credentials separately from the Claude login.
+
 ## Ownership
 
 | Layer | Responsibility | Source boundary |
@@ -51,8 +103,8 @@ embedder trusted-write grant does not grant operation approval.
 Generic product packs can use `product init`, `preview`, `invoke`, `resume` and
 `status`. Provider execution is opt-in through the operator-selected
 `LLMWIKI_PROVIDER_INVOCATION_MODULE`; product configuration cannot select trusted
-host code on the operator's behalf. Both optional backend packages pin this
-development compiler version. The development backend is not a sandbox.
+host code on the operator's behalf. Both private optional backend packages pin the matching
+`@atomicstrata/llmwiki-core` peer version. The development backend is not a sandbox.
 
 Live workflow projections and retained output/PDF routes are loopback-only.
 Providers should use the generic bounded fact panel; the experiment-specific
@@ -118,8 +170,8 @@ workspace installation and ordered builds; no package publication is needed loca
 
 Core entry points share built chunks, including lock/error identities and a
 module-instance token. Composition rejects a host from a duplicate core instance.
-The standard package's `compiler-sdk` and `compiler-cli` support entries preserve
-its composition without bundling another private copy of core. The separately
+Core's `compiler-sdk` and `compiler-cli` support entries let the standard
+package compose services without bundling another private copy of core. The separately
 named `compiler-legacy-workflows` entry preserves the caller-held-lock start
 contract; it does not independently verify that the caller holds the lock.
 
@@ -143,6 +195,13 @@ aliases, not duplicate implementations. Do not remove compatibility exports to
 make the dead-code report green.
 
 ## Viewer extension boundary
+
+The optional source-review cockpit is enabled with SDK
+`startViewer({ sourceChanges: true })`. It compares source excerpts, saved pages,
+and pending proposals, but does not generate or approve changes. This surface
+is experimental, off by default, and loopback-only. It is separate from workflow
+projection and retained-output routes. Source comparison stays read-only;
+mutation authority remains in the compiler's review/apply services.
 
 The generic viewer consumes a bounded, verified projection. New providers use
 the product-neutral `factPanel` contract; labels and values remain text, with
