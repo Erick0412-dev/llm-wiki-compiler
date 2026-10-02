@@ -5,6 +5,16 @@
 [![docs](https://img.shields.io/badge/docs-llmwiki.atomicstrata.ai-blue)](https://llmwiki.atomicstrata.ai)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+## New in 1.4.0 — Review before publishing. Reuse what you know.
+
+- **Review answers before they become wiki pages.** Stage answers with `query --save --review`, check their citations, and approve them when ready. Approve batches of generated pages in one operation.
+- **Do less repeat work.** Reuse extraction for unchanged sources and share prompt prefixes across compile and query requests.
+- **See what grounded an answer.** Query results report the pages actually supplied to the model. If embeddings fail, page selection can continue with a visible warning.
+- **Keep Claude coding instructions out of your wiki.** Use your existing Claude login without pulling personal or project `CLAUDE.md` instructions into generated pages and answers.
+- **Inspect source changes alongside generated pages.** An experimental, read-only source-review cockpit compares source excerpts, saved pages, and pending proposals when explicitly enabled through the SDK.
+
+[Release notes](https://github.com/atomicstrata/llm-wiki-compiler/releases/tag/v1.4.0) · [Upgrade guide](docs/guides/sdk-upgrade.mdx) · [Install llmwiki](#quick-start)
+
 ## New in 1.3 — A fresh look for your wiki.
 
 Meet Scientific Clay, with soft surfaces and rounded typography, and Minimal, which follows your system’s light or dark setting. Switch instantly between four themes, including Nebula Light and Dark.
@@ -411,7 +421,7 @@ Existing CLI and standard `createWiki` entry points remain available. Experiment
 artifact types and workflow statuses can require source updates; read the
 [SDK upgrade notes](docs/guides/sdk-upgrade.mdx) before upgrading. Standalone
 AutoSci/Newsroom process packages are separate; their builtin ontology templates
-remain supported. See the [changelog](CHANGELOG.md) for the candidate's changes
+remain supported. See the [changelog](CHANGELOG.md) for the release's changes
 and limits.
 
 **Released `1.3.0`:**
