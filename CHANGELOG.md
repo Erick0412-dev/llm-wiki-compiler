@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-01
+
+### Documentation
+
+- Highlight the main 1.4.0 benefits at the top of the README and place the
+  Configurable Lifecycle Profiles introduction in release order.
+- Consolidate the 1.4.0 changelog, retain contributor credits, and refresh the
+  architecture guide against the released implementation.
+- Republish the matching package set so npm displays the updated README.
+  Runtime behavior is unchanged from 1.4.0.
+
 ## [1.4.0] - 2026-10-01
 
 Review answers before publishing, reduce repeated compilation work, and trace
@@ -834,7 +845,8 @@ Initial release.
 - Atomic writes, lock-protected compilation, orphan marking for deleted sources.
 - `[[wikilink]]` resolution and auto-generated `wiki/index.md`.
 
-[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/atomicstrata/llm-wiki-compiler/compare/v1.1.0...v1.2.0
