@@ -29,10 +29,6 @@ The same page in a demonstration wiki. Click either screenshot for a closer look
 
 Recursive source folders, path exclusions, project-specific compile instructions, and storage for larger embedding indexes.
 
-### Configurable Lifecycle Profiles — introduced in 1.0.
-
-Build a domain-specific wiki with typed records, relationships, lifecycle gates, and workflows defined in one validated profile. Start with AutoSci or Newsroom, or create your own.
-
 ### New in 1.2 — Explore your records and their evidence.
 
 Browse profile-defined categories, declared fields, connected records, provenance, and supporting source passages in the local viewer.
@@ -40,6 +36,12 @@ Browse profile-defined categories, declared fields, connected records, provenanc
 ### New in 1.1 — Publish and share domain templates.
 
 Create signed template distributions, discover them through explicitly trusted catalogs, and install or update them with compatibility checks.
+
+### New in 1.0 — Configurable Lifecycle Profiles.
+
+**Build a knowledge system around the way you work.** Define your records, relationships, review gates, and workflows in one validated profile. Start with AutoSci for research or Newsroom for editorial work, or create your own.
+
+[Explore Configurable Lifecycle Profiles →](docs/concepts/configurable-lifecycle-profiles.mdx)
 
 ---
 
