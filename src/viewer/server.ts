@@ -35,6 +35,14 @@ import { buildReviewsEnvelope, REVIEW_LIST_LIMIT } from "./reviews.js";
 import { tryRenderBody, writeJson, writeJsonError, writeRenderFailed } from "./respond.js";
 import type { ViewerSnapshot } from "./types.js";
 import { buildViewerSnapshot } from "./snapshot.js";
+import {
+  ViewerSnapshotManager,
+  DEFAULT_REFRESH_INTERVAL_MS,
+} from "./snapshot-manager.js";
+export {
+  ViewerSnapshotManager,
+  DEFAULT_REFRESH_INTERVAL_MS,
+};
 import { handleApiWorkflowRun, type ViewerDeps } from "./workflow-run-projection.js";
 import { handleApiStageOutput, parseStageOutputPath } from "./workflow-artifact.js";
 import { handleApiWorkflowPdf, parsePdfPath } from "./workflow-pdf.js";
@@ -60,6 +68,8 @@ interface ViewerServerConfig {
   port: number;
   /** Optional fixed live-provider deadline; omitted uses the run-proportionate default. */
   providerTimeoutMs?: number;
+  /** Minimum interval in milliseconds between on-request snapshot rebuilds. Defaults to 5000 ms. */
+  refreshIntervalMs?: number;
 }
 
 /** Handle returned by `startViewerServer`. */
@@ -86,8 +96,13 @@ export async function startViewerServer(
   deps: ViewerDeps = {},
 ): Promise<ViewerServerHandle> {
   const boundConfig: ViewerServerConfig = { ...config };
+  const snapshotManager = new ViewerSnapshotManager(snapshot, {
+    root: snapshot.root,
+    refreshIntervalMs: config.refreshIntervalMs,
+    buildSnapshot: deps.buildSnapshot,
+  });
   const server = http.createServer((req, res) => {
-    handleRequest(req, res, snapshot, boundConfig, deps).catch((err) => {
+    handleRequest(req, res, snapshotManager, boundConfig, deps).catch((err) => {
       // Per spec: never return raw thrown error text to the client.
       // The per-route handlers catch render/sanitize failures locally
       // and emit `render_failed`; reaching here means a genuinely
@@ -135,6 +150,8 @@ export interface StartViewerOptions {
   port: number;
   /** Override the live stage-projection provider deadline in milliseconds. */
   providerTimeoutMs?: number;
+  /** Minimum interval in milliseconds between on-request snapshot rebuilds. Defaults to 5000 ms. */
+  refreshIntervalMs?: number;
 }
 
 /**
@@ -148,11 +165,17 @@ export async function startViewer(
   options: StartViewerOptions,
   deps: ViewerDeps = {},
 ): Promise<ViewerServerHandle> {
-  const snapshot = await buildViewerSnapshot(options.root);
+  const buildSnapshot = deps.buildSnapshot ?? buildViewerSnapshot;
+  const snapshot = await buildSnapshot(options.root);
   const timeout = options.providerTimeoutMs;
-  const config = { host: options.host, port: options.port, sourceChanges: options.sourceChanges,
+  const config = {
+    host: options.host,
+    port: options.port,
+    sourceChanges: options.sourceChanges,
     workflowJourneys: options.workflowJourneys ?? true,
-    ...(timeout === undefined ? {} : { providerTimeoutMs: timeout }) };
+    refreshIntervalMs: options.refreshIntervalMs,
+    ...(timeout === undefined ? {} : { providerTimeoutMs: timeout }),
+  };
   return startViewerServer(snapshot, config, deps);
 }
 
@@ -170,7 +193,7 @@ export async function startViewer(
 async function handleRequest(
   req: IncomingMessage,
   res: ServerResponse,
-  snapshot: ViewerSnapshot,
+  snapshotManager: ViewerSnapshotManager,
   config: ViewerServerConfig,
   deps: ViewerDeps,
 ): Promise<void> {
@@ -184,6 +207,7 @@ async function handleRequest(
     writeJsonError(res, 404, "not_found", `${req.method ?? "?"} ${url.pathname}`);
     return;
   }
+  const snapshot = await snapshotManager.getSnapshot();
   await routeRegistered(req, res, url, snapshot, config, deps);
 }
 
