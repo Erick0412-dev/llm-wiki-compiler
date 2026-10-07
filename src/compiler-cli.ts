@@ -77,7 +77,7 @@ export { templateTapAddCommand, templateTapForgetCommand, templateTapListCommand
 export type { TapAddOptions, TapForgetOptions, TapOutputOptions } from "./commands/template-tap.js";
 export { templateInspectCommand, templateInitCommand, templateListCommand, templateStatusCommand, templateUpdateCommand } from "./commands/template.js";
 export type { TemplateInitOptions, TemplateStatusOptions, TemplateUpdateOptions } from "./commands/template.js";
-export { default as viewCommand } from "./commands/view.js";
+export { default as viewCommand, resolveBindConfig, resolvePort, parsePort } from "./commands/view.js";
 export { default as visualizeCommand } from "./commands/visualize.js";
 export type { VisualizeOptions } from "./commands/visualize.js";
 export { default as watchCommand } from "./commands/watch.js";
