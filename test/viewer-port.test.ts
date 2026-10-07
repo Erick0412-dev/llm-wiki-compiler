@@ -41,6 +41,18 @@ async function getFreePort(): Promise<number> {
   });
 }
 
+/** Register an afterEach hook that restores the target environment variable. */
+function preserveEnvVar(varName: string): void {
+  const originalValue = process.env[varName];
+  afterEach(() => {
+    if (originalValue !== undefined) {
+      process.env[varName] = originalValue;
+    } else {
+      delete process.env[varName];
+    }
+  });
+}
+
 describe("parsePort unit tests", () => {
   it("returns 0 for undefined", () => {
     expect(parsePort(undefined)).toBe(0);
@@ -84,15 +96,7 @@ describe("parsePort unit tests", () => {
 });
 
 describe("resolvePort precedence and defaults", () => {
-  const originalEnv = process.env[ENV_VIEW_PORT];
-
-  afterEach(() => {
-    if (originalEnv !== undefined) {
-      process.env[ENV_VIEW_PORT] = originalEnv;
-    } else {
-      delete process.env[ENV_VIEW_PORT];
-    }
-  });
+  preserveEnvVar(ENV_VIEW_PORT);
 
   it("defaults to 0 when flag is undefined and env var is unset", () => {
     delete process.env[ENV_VIEW_PORT];
@@ -141,15 +145,7 @@ describe("resolvePort precedence and defaults", () => {
 });
 
 describe("resolveBindConfig integration", () => {
-  const originalEnv = process.env[ENV_VIEW_PORT];
-
-  afterEach(() => {
-    if (originalEnv !== undefined) {
-      process.env[ENV_VIEW_PORT] = originalEnv;
-    } else {
-      delete process.env[ENV_VIEW_PORT];
-    }
-  });
+  preserveEnvVar(ENV_VIEW_PORT);
 
   it("resolves default loopback host and port 0", () => {
     delete process.env[ENV_VIEW_PORT];
