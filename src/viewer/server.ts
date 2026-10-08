@@ -39,10 +39,6 @@ import {
   ViewerSnapshotManager,
   DEFAULT_REFRESH_INTERVAL_MS,
 } from "./snapshot-manager.js";
-export {
-  ViewerSnapshotManager,
-  DEFAULT_REFRESH_INTERVAL_MS,
-};
 import { handleApiWorkflowRun, type ViewerDeps } from "./workflow-run-projection.js";
 import { handleApiStageOutput, parseStageOutputPath } from "./workflow-artifact.js";
 import { handleApiWorkflowPdf, parsePdfPath } from "./workflow-pdf.js";
@@ -99,7 +95,6 @@ export async function startViewerServer(
   const snapshotManager = new ViewerSnapshotManager(snapshot, {
     root: snapshot.root,
     refreshIntervalMs: config.refreshIntervalMs,
-    buildSnapshot: deps.buildSnapshot,
   });
   const server = http.createServer((req, res) => {
     handleRequest(req, res, snapshotManager, boundConfig, deps).catch((err) => {
@@ -165,15 +160,14 @@ export async function startViewer(
   options: StartViewerOptions,
   deps: ViewerDeps = {},
 ): Promise<ViewerServerHandle> {
-  const buildSnapshot = deps.buildSnapshot ?? buildViewerSnapshot;
-  const snapshot = await buildSnapshot(options.root);
+  const snapshot = await buildViewerSnapshot(options.root);
   const timeout = options.providerTimeoutMs;
   const config = {
     host: options.host,
     port: options.port,
     sourceChanges: options.sourceChanges,
     workflowJourneys: options.workflowJourneys ?? true,
-    refreshIntervalMs: options.refreshIntervalMs,
+    refreshIntervalMs: options.refreshIntervalMs ?? DEFAULT_REFRESH_INTERVAL_MS,
     ...(timeout === undefined ? {} : { providerTimeoutMs: timeout }),
   };
   return startViewerServer(snapshot, config, deps);

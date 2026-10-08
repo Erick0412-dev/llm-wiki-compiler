@@ -210,8 +210,6 @@ export type LiveStageProjectionProvider = (
 /** Optional construction-time deps threaded through the viewer request path. */
 export interface ViewerDeps {
   readonly liveStageProjectionProvider?: LiveStageProjectionProvider;
-  /** Optional custom snapshot builder for test suites or projection wrappers. */
-  readonly buildSnapshot?: (root: string) => Promise<import("./types.js").ViewerSnapshot>;
 }
 
 /** Default provider budget: a sixty-second floor, then ten seconds per recorded stage. */
