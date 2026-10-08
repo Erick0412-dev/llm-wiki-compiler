@@ -13,7 +13,8 @@ import net from "net";
 import path from "path";
 import { exec as execCb } from "child_process";
 import { promisify } from "util";
-import { parsePort, resolveBindConfig, resolvePort } from "../src/commands/view.js";
+import { resolveBindConfig } from "../src/commands/view.js";
+import { parsePort, resolvePort } from "../src/cli/view-port.js";
 import { ENV_VIEW_PORT } from "../src/utils/constants.js";
 import { makeTempRoot } from "./fixtures/temp-root.js";
 import {

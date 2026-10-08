@@ -11,7 +11,7 @@ import { Command } from "commander";
 import { ingestCommand } from "@atomicstrata/llmwiki-core/compiler-cli";
 import { ingestSessionCommand } from "@atomicstrata/llmwiki-core/compiler-cli";
 import { viewCommand } from "@atomicstrata/llmwiki-core/compiler-cli";
-import { resolvePort } from "./commands/view.js";
+import { resolvePort } from "./cli/view-port.js";
 import { visualizeCommand, type VisualizeOptions } from "@atomicstrata/llmwiki-core/compiler-cli";
 import { compileCommand } from "@atomicstrata/llmwiki-core/compiler-cli";
 import { rmCommand } from "@atomicstrata/llmwiki-core/compiler-cli";

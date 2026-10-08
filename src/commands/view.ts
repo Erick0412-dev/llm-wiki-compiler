@@ -13,7 +13,6 @@
 
 import { spawn } from "child_process";
 import { startViewer } from "../viewer/server.js";
-import { ENV_VIEW_PORT } from "../utils/constants.js";
 
 const LOOPBACK_HOST = "127.0.0.1";
 
@@ -83,22 +82,7 @@ export function resolveBindConfig(options: ViewCommandOptions): { host: string; 
   assertHostAllowLanSymmetry(hostFlag, allowLan);
   const host = hostFlag ? (options.host as string) : LOOPBACK_HOST;
   assertHostNotWildcard(host);
-  return { host, port: parsePort(options.port, "--port") };
-}
-
-/**
- * Resolve the listening port honoring precedence:
- * explicit CLI flag (`--port`) > environment variable (`LLMWIKI_VIEW_PORT`) > default (0).
- */
-export function resolvePort(flagPort: string | number | undefined): number {
-  if (flagPort !== undefined) {
-    return parsePort(flagPort, "--port");
-  }
-  const envVal = process.env[ENV_VIEW_PORT];
-  if (envVal !== undefined && envVal.trim().length > 0) {
-    return parsePort(envVal.trim(), ENV_VIEW_PORT);
-  }
-  return 0;
+  return { host, port: parsePort(options.port) };
 }
 
 /** Reject `--host` and `--allow-lan` being supplied independently. */
@@ -131,18 +115,12 @@ function buildReadyUrl(host: string, port: number): string {
   return `http://${host}:${port}`;
 }
 
-/** Coerce the optional port string or number into a legal TCP port [0, 65535]. */
-export function parsePort(raw: string | number | undefined, label: string = "--port"): number {
+/** Coerce the optional --port string into a non-negative integer. */
+function parsePort(raw: string | number | undefined): number {
   if (raw === undefined) return 0;
-  const trimmed = typeof raw === "string" ? raw.trim() : raw;
-  const value = typeof trimmed === "number" ? trimmed : Number(trimmed);
-  const isDigits =
-    typeof trimmed === "number"
-      ? Number.isInteger(trimmed)
-      : typeof trimmed === "string" && /^\d+$/.test(trimmed);
-
-  if (!isDigits || !isValidPort(value)) {
-    throw new Error(`Invalid ${label} value: ${raw}`);
+  const value = typeof raw === "number" ? raw : Number(raw);
+  if (!isValidPort(value)) {
+    throw new Error(`Invalid --port value: ${raw}`);
   }
   return value;
 }
