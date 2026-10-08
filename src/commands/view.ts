@@ -83,7 +83,7 @@ export function resolveBindConfig(options: ViewCommandOptions): { host: string; 
   assertHostAllowLanSymmetry(hostFlag, allowLan);
   const host = hostFlag ? (options.host as string) : LOOPBACK_HOST;
   assertHostNotWildcard(host);
-  return { host, port: resolvePort(options.port) };
+  return { host, port: parsePort(options.port, "--port") };
 }
 
 /**

@@ -144,25 +144,14 @@ describe("resolvePort precedence and defaults", () => {
   });
 });
 
-describe("resolveBindConfig integration", () => {
-  preserveEnvVar(ENV_VIEW_PORT);
-
+describe("resolveBindConfig unit behavior", () => {
   it("resolves default loopback host and port 0", () => {
-    delete process.env[ENV_VIEW_PORT];
     const config = resolveBindConfig({});
     expect(config.host).toBe("127.0.0.1");
     expect(config.port).toBe(0);
   });
 
-  it("resolves port from LLMWIKI_VIEW_PORT with loopback host", () => {
-    process.env[ENV_VIEW_PORT] = "3000";
-    const config = resolveBindConfig({});
-    expect(config.host).toBe("127.0.0.1");
-    expect(config.port).toBe(3000);
-  });
-
-  it("flag overrides LLMWIKI_VIEW_PORT in resolveBindConfig", () => {
-    process.env[ENV_VIEW_PORT] = "3000";
+  it("resolves explicit port", () => {
     const config = resolveBindConfig({ port: 4000 });
     expect(config.host).toBe("127.0.0.1");
     expect(config.port).toBe(4000);
@@ -181,18 +170,19 @@ describe("CLI integration — LLMWIKI_VIEW_PORT and --port precedence", () => {
 
   it("rejects invalid LLMWIKI_VIEW_PORT on startup with exit code non-zero", async () => {
     const root = await makeTempRoot("viewer-port-invalid-env");
-    let stderr = "";
+    let failure: { code?: number | null; stderr?: string } | null = null;
     try {
       await exec(`node "${CLI}" view`, {
         cwd: root,
         timeout: CLI_TIMEOUT_MS,
         env: { ...process.env, [ENV_VIEW_PORT]: "not-a-port" },
       });
-      throw new Error("expected CLI to exit non-zero for invalid LLMWIKI_VIEW_PORT");
     } catch (err) {
-      stderr = String((err as { stderr?: string }).stderr ?? "");
+      failure = err as { code?: number | null; stderr?: string };
     }
-    expect(stderr).toMatch(/Invalid LLMWIKI_VIEW_PORT value: not-a-port/);
+    expect(failure).not.toBeNull();
+    expect(failure?.code).not.toBe(0);
+    expect(String(failure?.stderr ?? "")).toMatch(/Invalid LLMWIKI_VIEW_PORT value: not-a-port/);
   });
 
   it("binds to port specified by LLMWIKI_VIEW_PORT when --port is omitted", async () => {
@@ -209,9 +199,24 @@ describe("CLI integration — LLMWIKI_VIEW_PORT and --port precedence", () => {
   it("CLI --port overrides LLMWIKI_VIEW_PORT in running server", async () => {
     const root = await makeTempRoot("viewer-port-flag-override");
     const flagPort = await getFreePort();
-    const envPort = await getFreePort();
+    let envPort = await getFreePort();
+    while (envPort === flagPort) {
+      envPort = await getFreePort();
+    }
+    expect(flagPort).not.toBe(envPort);
     const handle = await startViewerCLI(["--port", String(flagPort)], root, CLI_TIMEOUT_MS, {
       [ENV_VIEW_PORT]: String(envPort),
+    });
+    activeHandles.push(handle);
+    expect(handle.port).toBe(flagPort);
+    expect(handle.stdout).toMatch(new RegExp(`Viewer ready at http://127\\.0\\.0\\.1:${flagPort}`));
+  });
+
+  it("starts normally when --port is given alongside an invalid LLMWIKI_VIEW_PORT", async () => {
+    const root = await makeTempRoot("viewer-port-flag-with-invalid-env");
+    const flagPort = await getFreePort();
+    const handle = await startViewerCLI(["--port", String(flagPort)], root, CLI_TIMEOUT_MS, {
+      [ENV_VIEW_PORT]: "not-a-port",
     });
     activeHandles.push(handle);
     expect(handle.port).toBe(flagPort);
